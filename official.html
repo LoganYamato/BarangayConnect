@@ -1,32 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BarangayConnect | Official</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BarangayConnect — Official</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>BarangayConnect</h1>
-    <nav>
+  <header class="topbar">
+    <div class="brand">BarangayConnect</div>
+    <nav class="nav">
       <a href="index.html">Home</a>
-      <a href="resident.html">Resident Portal</a>
+      <a href="resident.html">Resident</a>
     </nav>
   </header>
 
-  <main>
-    <h2>Manage Reports</h2>
+  <main class="container">
+    <h2>Official Dashboard — Manage Reports</h2>
     <div id="officialList" class="report-list"></div>
   </main>
 
-  <footer>
-    <p>BarangayConnect Prototype | Official View</p>
-  </footer>
+  <footer class="foot"><small>BarangayConnect — Official View</small></footer>
 
-  <script src="main.js"></script>
-  <script>
-    renderOfficialReports();
-  </script>
+  <!-- shared script -->
+  <script src="script.js"></script>
 </body>
 </html>
