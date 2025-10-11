@@ -1,41 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BarangayConnect | Resident</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BarangayConnect — Resident</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>BarangayConnect</h1>
-    <nav>
+  <header class="topbar">
+    <div class="brand">BarangayConnect</div>
+    <nav class="nav">
       <a href="index.html">Home</a>
-      <a href="official.html">Official Portal</a>
+      <a href="official.html">Official</a>
     </nav>
   </header>
 
-  <main>
-    <section class="form-section">
-      <h2>Submit a Report</h2>
-      <form id="reportForm">
-        <input id="issue" placeholder="Issue Type (e.g. Waste, Road, Health)" required />
-        <textarea id="description" placeholder="Description" required></textarea>
-        <input id="location" placeholder="Location (e.g. Street, Area)" required />
-        <button type="submit">Submit Report</button>
-      </form>
-    </section>
+  <main class="container">
+    <h2>Submit a Community Report</h2>
 
-    <section>
-      <h2>Your Submitted Reports</h2>
-      <div id="reportList" class="report-list"></div>
-    </section>
+    <form id="reportForm" class="card form-card" autocomplete="off">
+      <label for="issue">Issue type</label>
+      <input id="issue" name="issue" placeholder="e.g. Waste / Road / Safety" required />
+
+      <label for="description">Description</label>
+      <textarea id="description" name="description" placeholder="Describe the issue" required></textarea>
+
+      <label for="location">Location</label>
+      <input id="location" name="location" placeholder="e.g. Purok 4, Street name" required />
+
+      <button type="submit" class="btn">Submit Report</button>
+    </form>
+
+    <h3>Your Submitted Reports</h3>
+    <div id="reportList" class="report-list"></div>
   </main>
 
-  <footer>
-    <p>BarangayConnect Prototype | Resident View</p>
-  </footer>
+  <footer class="foot"><small>BarangayConnect — Resident View</small></footer>
 
-  <script src="main.js"></script>
+  <!-- shared script -->
+  <script src="script.js"></script>
 </body>
 </html>
