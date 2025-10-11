@@ -1,77 +1,105 @@
-// Handle report submission
-const form = document.getElementById('reportForm');
-if (form) {
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const issue = document.getElementById('issue').value;
-    const description = document.getElementById('description').value;
-    const location = document.getElementById('location').value;
+/* Lightweight shared JS for Resident & Official pages
+   - stores reports in localStorage under key "barangay_reports"
+   - works on resident.html and official.html
+*/
 
-    const newReport = {
-      issue,
-      description,
-      location,
-      status: 'Pending',
-      timestamp: new Date().toLocaleString()
-    };
+const STORAGE_KEY = 'barangay_reports';
 
-    const reports = JSON.parse(localStorage.getItem('reports')) || [];
-    reports.push(newReport);
-    localStorage.setItem('reports', JSON.stringify(reports));
+function loadReports() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch (e) { return []; }
+}
+function saveReports(r) { localStorage.setItem(STORAGE_KEY, JSON.stringify(r)); }
 
-    form.reset();
-    renderReports();
-  });
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
-// Render reports for Resident view
-function renderReports() {
-  const list = document.getElementById('reportList');
-  if (!list) return;
-
-  const reports = JSON.parse(localStorage.getItem('reports')) || [];
-  list.innerHTML = reports.length
-    ? reports.map((r) => `
-      <div class="report-card">
-        <h3>${r.issue}</h3>
-        <p>${r.description}</p>
-        <p><strong>Location:</strong> ${r.location}</p>
-        <p><strong>Status:</strong> ${r.status}</p>
-        <p><em>${r.timestamp}</em></p>
+function renderResident() {
+  const container = document.getElementById('reportList');
+  if (!container) return;
+  const reports = loadReports();
+  if (!reports.length) {
+    container.innerHTML = '<p>No reports yet.</p>';
+    return;
+  }
+  container.innerHTML = reports.map(r => `
+    <div class="report-card">
+      <div><strong>${escapeHtml(r.issue)}</strong>
+        <span class="status ${r.status.toLowerCase().replace(/\s+/g,'-')}">${escapeHtml(r.status)}</span>
       </div>
-    `).join('')
-    : '<p>No reports submitted yet.</p>';
+      <div style="margin-top:6px">${escapeHtml(r.description)}</div>
+      <div class="meta"><em>Location:</em> ${escapeHtml(r.location)} — <small>${escapeHtml(r.timestamp)}</small></div>
+    </div>
+  `).join('');
 }
 
-// Render and manage reports for Official view
 function renderOfficialReports() {
-  const list = document.getElementById('officialList');
-  if (!list) return;
-
-  const reports = JSON.parse(localStorage.getItem('reports')) || [];
-  list.innerHTML = reports.length
-    ? reports.map((r, i) => `
-      <div class="report-card">
-        <h3>${r.issue}</h3>
-        <p>${r.description}</p>
-        <p><strong>Location:</strong> ${r.location}</p>
-        <p><strong>Status:</strong> ${r.status}</p>
-        <button onclick="updateStatus(${i}, 'In Progress')">In Progress</button>
-        <button onclick="updateStatus(${i}, 'Resolved')">Resolved</button>
+  const container = document.getElementById('officialList');
+  if (!container) return;
+  const reports = loadReports();
+  if (!reports.length) {
+    container.innerHTML = '<p>No reports yet.</p>';
+    return;
+  }
+  container.innerHTML = reports.map(r => `
+    <div class="report-card">
+      <div><strong>${escapeHtml(r.issue)}</strong>
+        <span class="status ${r.status.toLowerCase().replace(/\s+/g,'-')}">${escapeHtml(r.status)}</span>
       </div>
-    `).join('')
-    : '<p>No reports yet.</p>';
+      <div style="margin-top:6px">${escapeHtml(r.description)}</div>
+      <div class="meta"><em>Location:</em> ${escapeHtml(r.location)} — <small>${escapeHtml(r.timestamp)}</small></div>
+      <div class="actions">
+        <button onclick="updateStatus(${r.id},'Acknowledged')">Acknowledge</button>
+        <button onclick="updateStatus(${r.id},'In Progress')">In Progress</button>
+        <button onclick="updateStatus(${r.id},'Resolved')">Resolved</button>
+      </div>
+    </div>
+  `).join('');
 }
 
-function updateStatus(index, newStatus) {
-  const reports = JSON.parse(localStorage.getItem('reports')) || [];
-  reports[index].status = newStatus;
-  localStorage.setItem('reports', JSON.stringify(reports));
-  renderOfficialReports();
+function addReport(issue, description, location) {
+  const reports = loadReports();
+  const newReport = {
+    id: Date.now(),
+    issue, description, location,
+    status: 'Pending',
+    timestamp: new Date().toLocaleString()
+  };
+  reports.push(newReport);
+  saveReports(reports);
 }
 
-// Auto-render when loading
-window.onload = () => {
-  renderReports();
+window.updateStatus = function(id, newStatus) {
+  const reports = loadReports();
+  const idx = reports.findIndex(r => r.id === id);
+  if (idx === -1) return;
+  reports[idx].status = newStatus;
+  saveReports(reports);
+  // rerender both views (if open)
   renderOfficialReports();
+  renderResident();
 };
+
+// DOM ready wiring
+document.addEventListener('DOMContentLoaded', () => {
+  // Resident form
+  const form = document.getElementById('reportForm');
+  if (form) {
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const issue = document.getElementById('issue').value.trim();
+      const description = document.getElementById('description').value.trim();
+      const location = document.getElementById('location').value.trim();
+      if (!issue || !description || !location) { alert('Please fill all fields.'); return; }
+      addReport(issue, description, location);
+      form.reset();
+      renderResident();
+      alert('Report submitted.');
+    });
+  }
+
+  // initial render (works even if only one of the pages is open)
+  renderResident();
+  renderOfficialReports();
+});
