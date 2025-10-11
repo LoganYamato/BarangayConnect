@@ -3,35 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BarangayConnect Prototype</title>
+  <title>BarangayConnect | Home</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <nav class="navbar">
-    <div class="logo">BarangayConnect</div>
-  </nav>
+  <header>
+    <h1>BarangayConnect</h1>
+    <nav>
+      <a href="resident.html">Resident Portal</a>
+      <a href="official.html">Official Portal</a>
+    </nav>
+  </header>
 
-  <main class="centered">
-    <h1>Welcome to BarangayConnect</h1>
-    <p>A citizen reporting and announcement system for your barangay.</p>
+  <main class="center">
+    <h2>Welcome to BarangayConnect</h2>
+    <p>
+      A citizen reporting and announcement system for sustainable urban communities.
+      Select your portal below to get started.
+    </p>
 
-    <div class="card-container">
-      <div class="card">
-        <h2>Resident Portal</h2>
+    <div class="card-grid">
+      <a href="resident.html" class="card">
+        <h3>Resident</h3>
         <p>Report issues, view announcements, and track your submissions.</p>
-        <a href="resident.html" class="btn">Go to Resident</a>
-      </div>
-
-      <div class="card">
-        <h2>Official Dashboard</h2>
-        <p>Review reports, update statuses, and communicate with residents.</p>
-        <a href="official.html" class="btn">Go to Official</a>
-      </div>
+      </a>
+      <a href="official.html" class="card">
+        <h3>Official</h3>
+        <p>Manage reports, update statuses, and send announcements.</p>
+      </a>
     </div>
   </main>
 
   <footer>
-    <p>© 2025 BarangayConnect | Proof of Concept</p>
+    <p>© 2025 BarangayConnect </p>
   </footer>
 </body>
 </html>
