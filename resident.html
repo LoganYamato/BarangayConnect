@@ -1,30 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Resident Portal - BarangayConnect</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BarangayConnect | Resident</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <nav class="navbar">
-    <div class="logo">BarangayConnect</div>
-    <a href="index.html" class="back-link">← Back</a>
-  </nav>
+  <header>
+    <h1>BarangayConnect</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="official.html">Official Portal</a>
+    </nav>
+  </header>
 
   <main>
-    <h2>Submit a Community Report</h2>
-    <form id="reportForm" class="card">
-      <input id="issue" placeholder="Issue Type (e.g. Road Damage)" required>
-      <textarea id="description" placeholder="Describe the issue" required></textarea>
-      <input id="location" placeholder="Location (e.g. Zone 3, Purok 5)" required>
-      <button type="submit" class="btn">Submit Report</button>
-    </form>
+    <section class="form-section">
+      <h2>Submit a Report</h2>
+      <form id="reportForm">
+        <input id="issue" placeholder="Issue Type (e.g. Waste, Road, Health)" required />
+        <textarea id="description" placeholder="Description" required></textarea>
+        <input id="location" placeholder="Location (e.g. Street, Area)" required />
+        <button type="submit">Submit Report</button>
+      </form>
+    </section>
 
-    <h3>Your Submitted Reports</h3>
-    <div id="reportList" class="report-list"></div>
+    <section>
+      <h2>Your Submitted Reports</h2>
+      <div id="reportList" class="report-list"></div>
+    </section>
   </main>
 
-  <script src="script.js"></script>
+  <footer>
+    <p>BarangayConnect Prototype | Resident View</p>
+  </footer>
+
+  <script src="main.js"></script>
 </body>
 </html>
