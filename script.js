@@ -1,74 +1,77 @@
-// Basic proof-of-concept data persistence
-let reports = JSON.parse(localStorage.getItem("reports")) || [];
-
-function saveReports() {
-  localStorage.setItem("reports", JSON.stringify(reports));
-}
-
-// Resident submission
-const form = document.getElementById("reportForm");
+// Handle report submission
+const form = document.getElementById('reportForm');
 if (form) {
-  form.addEventListener("submit", (e) => {
+  form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const issue = document.getElementById("issue").value;
-    const desc = document.getElementById("description").value;
-    const loc = document.getElementById("location").value;
+    const issue = document.getElementById('issue').value;
+    const description = document.getElementById('description').value;
+    const location = document.getElementById('location').value;
 
     const newReport = {
-      id: Date.now(),
       issue,
-      desc,
-      loc,
-      status: "Pending",
-      time: new Date().toLocaleString(),
+      description,
+      location,
+      status: 'Pending',
+      timestamp: new Date().toLocaleString()
     };
 
+    const reports = JSON.parse(localStorage.getItem('reports')) || [];
     reports.push(newReport);
-    saveReports();
+    localStorage.setItem('reports', JSON.stringify(reports));
+
     form.reset();
-    alert("✅ Report submitted successfully!");
-    renderResident();
+    renderReports();
   });
 }
 
-// Render for Resident
-function renderResident() {
-  const container = document.getElementById("reportList");
-  if (!container) return;
-  container.innerHTML = "";
-  reports.forEach(r => {
-    container.innerHTML += `
-      <div class="report-item">
-        <strong>${r.issue}</strong> <span class="status ${r.status.toLowerCase()}">${r.status}</span><br>
-        ${r.desc}<br>
-        <em>Location:</em> ${r.loc}<br>
-        <small>${r.time}</small>
-      </div>`;
-  });
-}
-renderResident();
+// Render reports for Resident view
+function renderReports() {
+  const list = document.getElementById('reportList');
+  if (!list) return;
 
-// Render for Officials
-function renderOfficial() {
-  const container = document.getElementById("officialList");
-  if (!container) return;
-  container.innerHTML = "";
-  reports.forEach(r => {
-    container.innerHTML += `
-      <div class="report-item">
-        <strong>${r.issue}</strong> <span class="status ${r.status.toLowerCase()}">${r.status}</span><br>
-        ${r.desc}<br>
-        <em>Location:</em> ${r.loc}<br>
-        <small>${r.time}</small><br>
-        <button onclick="updateStatus(${r.id}, 'In Progress')">In Progress</button>
-        <button onclick="updateStatus(${r.id}, 'Resolved')">Resolved</button>
-      </div>`;
-  });
+  const reports = JSON.parse(localStorage.getItem('reports')) || [];
+  list.innerHTML = reports.length
+    ? reports.map((r) => `
+      <div class="report-card">
+        <h3>${r.issue}</h3>
+        <p>${r.description}</p>
+        <p><strong>Location:</strong> ${r.location}</p>
+        <p><strong>Status:</strong> ${r.status}</p>
+        <p><em>${r.timestamp}</em></p>
+      </div>
+    `).join('')
+    : '<p>No reports submitted yet.</p>';
 }
-renderOfficial();
 
-function updateStatus(id, newStatus) {
-  reports = reports.map(r => r.id === id ? {...r, status: newStatus} : r);
-  saveReports();
-  renderOfficial();
+// Render and manage reports for Official view
+function renderOfficialReports() {
+  const list = document.getElementById('officialList');
+  if (!list) return;
+
+  const reports = JSON.parse(localStorage.getItem('reports')) || [];
+  list.innerHTML = reports.length
+    ? reports.map((r, i) => `
+      <div class="report-card">
+        <h3>${r.issue}</h3>
+        <p>${r.description}</p>
+        <p><strong>Location:</strong> ${r.location}</p>
+        <p><strong>Status:</strong> ${r.status}</p>
+        <button onclick="updateStatus(${i}, 'In Progress')">In Progress</button>
+        <button onclick="updateStatus(${i}, 'Resolved')">Resolved</button>
+      </div>
+    `).join('')
+    : '<p>No reports yet.</p>';
 }
+
+function updateStatus(index, newStatus) {
+  const reports = JSON.parse(localStorage.getItem('reports')) || [];
+  reports[index].status = newStatus;
+  localStorage.setItem('reports', JSON.stringify(reports));
+  renderOfficialReports();
+}
+
+// Auto-render when loading
+window.onload = () => {
+  renderReports();
+  renderOfficialReports();
+};
