@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resident Portal - BarangayConnect</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="logo">BarangayConnect</div>
+    <a href="index.html" class="back-link">← Back</a>
+  </nav>
+
+  <main>
+    <h2>Submit a Community Report</h2>
+    <form id="reportForm" class="card">
+      <input id="issue" placeholder="Issue Type (e.g. Road Damage)" required>
+      <textarea id="description" placeholder="Describe the issue" required></textarea>
+      <input id="location" placeholder="Location (e.g. Zone 3, Purok 5)" required>
+      <button type="submit" class="btn">Submit Report</button>
+    </form>
+
+    <h3>Your Submitted Reports</h3>
+    <div id="reportList" class="report-list"></div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
