@@ -1,74 +1,100 @@
-// Basic proof-of-concept data persistence
-let reports = JSON.parse(localStorage.getItem("reports")) || [];
+// Simulated Firebase initialization (for proof-of-concept)
+const firebaseConfig = {
+  apiKey: "demo",
+  authDomain: "demo.firebaseapp.com",
+  projectId: "demo",
+};
 
-function saveReports() {
-  localStorage.setItem("reports", JSON.stringify(reports));
+// Dummy user database (for offline testing)
+const users = [
+  { email: "official@barangay.gov", password: "official123", role: "official", name: "Brgy. Official" },
+  { email: "resident1@gmail.com", password: "resident123", role: "resident", name: "Resident One" },
+  { email: "resident2@gmail.com", password: "resident123", role: "resident", name: "Resident Two" }
+];
+
+// Local storage reports
+const reports = JSON.parse(localStorage.getItem("reports")) || [];
+
+// Handle login
+const loginForm = document.getElementById("loginForm");
+if (loginForm) {
+  loginForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value.trim();
+    const user = users.find(u => u.email === email && u.password === password);
+    const msg = document.getElementById("loginMessage");
+
+    if (user) {
+      localStorage.setItem("currentUser", JSON.stringify(user));
+      msg.textContent = "Login successful!";
+      setTimeout(() => {
+        window.location.href = user.role === "official" ? "official.html" : "resident.html";
+      }, 800);
+    } else {
+      msg.textContent = "Invalid credentials. Please try again.";
+    }
+  });
 }
 
-// Resident submission
-const form = document.getElementById("reportForm");
-if (form) {
-  form.addEventListener("submit", (e) => {
+// Handle registration
+const registerForm = document.getElementById("registerForm");
+if (registerForm) {
+  registerForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    const issue = document.getElementById("issue").value;
-    const desc = document.getElementById("description").value;
-    const loc = document.getElementById("location").value;
+    const name = document.getElementById("registerName").value.trim();
+    const email = document.getElementById("registerEmail").value.trim();
+    const password = document.getElementById("registerPassword").value.trim();
+    const role = document.getElementById("registerRole").value;
 
+    const msg = document.getElementById("registerMessage");
+    if (users.some(u => u.email === email)) {
+      msg.textContent = "Email already registered.";
+      return;
+    }
+
+    users.push({ email, password, role, name });
+    msg.textContent = "Registration successful!";
+    setTimeout(() => (window.location.href = "index.html"), 1000);
+  });
+}
+
+// Handle logout
+const logoutBtn = document.getElementById("logoutBtn");
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", () => {
+    localStorage.removeItem("currentUser");
+    window.location.href = "index.html";
+  });
+}
+
+// Handle report submission (Resident)
+const reportForm = document.getElementById("reportForm");
+if (reportForm) {
+  reportForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const issue = document.getElementById("issue").value.trim();
+    const desc = document.getElementById("description").value.trim();
+    const location = document.getElementById("location").value.trim();
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
     const newReport = {
       id: Date.now(),
-      issue,
-      desc,
-      loc,
-      status: "Pending",
-      time: new Date().toLocaleString(),
+      issue, desc, location,
+      author: currentUser?.name || "Anonymous"
     };
-
     reports.push(newReport);
-    saveReports();
-    form.reset();
-    alert("✅ Report submitted successfully!");
-    renderResident();
+    localStorage.setItem("reports", JSON.stringify(reports));
+    alert("Report submitted successfully!");
+    reportForm.reset();
   });
 }
 
-// Render for Resident
-function renderResident() {
-  const container = document.getElementById("reportList");
-  if (!container) return;
-  container.innerHTML = "";
+// Display reports (Official)
+const reportReviewList = document.getElementById("reportReviewList");
+if (reportReviewList) {
   reports.forEach(r => {
-    container.innerHTML += `
-      <div class="report-item">
-        <strong>${r.issue}</strong> <span class="status ${r.status.toLowerCase()}">${r.status}</span><br>
-        ${r.desc}<br>
-        <em>Location:</em> ${r.loc}<br>
-        <small>${r.time}</small>
-      </div>`;
+    const li = document.createElement("li");
+    li.textContent = `${r.issue} (${r.location}) — reported by ${r.author}`;
+    reportReviewList.appendChild(li);
   });
-}
-renderResident();
-
-// Render for Officials
-function renderOfficial() {
-  const container = document.getElementById("officialList");
-  if (!container) return;
-  container.innerHTML = "";
-  reports.forEach(r => {
-    container.innerHTML += `
-      <div class="report-item">
-        <strong>${r.issue}</strong> <span class="status ${r.status.toLowerCase()}">${r.status}</span><br>
-        ${r.desc}<br>
-        <em>Location:</em> ${r.loc}<br>
-        <small>${r.time}</small><br>
-        <button onclick="updateStatus(${r.id}, 'In Progress')">In Progress</button>
-        <button onclick="updateStatus(${r.id}, 'Resolved')">Resolved</button>
-      </div>`;
-  });
-}
-renderOfficial();
-
-function updateStatus(id, newStatus) {
-  reports = reports.map(r => r.id === id ? {...r, status: newStatus} : r);
-  saveReports();
-  renderOfficial();
 }

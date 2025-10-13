@@ -3,18 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Official Dashboard - BarangayConnect</title>
+  <title>Official Dashboard | BarangayConnect</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <nav class="navbar">
-    <div class="logo">BarangayConnect</div>
-    <a href="index.html" class="back-link">← Back</a>
-  </nav>
+  <header class="navbar">
+    <img src="logo.png" alt="Barangay Logo" class="logo">
+    <h1>BarangayConnect</h1>
+    <nav>
+      <button id="logoutBtn" class="logout">Logout</button>
+    </nav>
+  </header>
 
-  <main>
-    <h2>Reported Issues</h2>
-    <div id="officialList" class="report-list"></div>
+  <main class="container">
+    <h2>Welcome, Barangay Official!</h2>
+    <div id="officialList">
+      <h3>Submitted Reports</h3>
+      <ul id="reportReviewList"></ul>
+    </div>
   </main>
 
   <script src="script.js"></script>

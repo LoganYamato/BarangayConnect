@@ -3,26 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Resident Portal - BarangayConnect</title>
+  <title>Resident Dashboard | BarangayConnect</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <nav class="navbar">
-    <div class="logo">BarangayConnect</div>
-    <a href="index.html" class="back-link">← Back</a>
-  </nav>
+  <header class="navbar">
+    <img src="logo.png" alt="Barangay Logo" class="logo">
+    <h1>BarangayConnect</h1>
+    <nav>
+      <button id="logoutBtn" class="logout">Logout</button>
+    </nav>
+  </header>
 
-  <main>
-    <h2>Submit a Community Report</h2>
-    <form id="reportForm" class="card">
-      <input id="issue" placeholder="Issue Type (e.g. Road Damage)" required>
-      <textarea id="description" placeholder="Describe the issue" required></textarea>
-      <input id="location" placeholder="Location (e.g. Zone 3, Purok 5)" required>
-      <button type="submit" class="btn">Submit Report</button>
+  <main class="container">
+    <h2>Welcome, Resident!</h2>
+    <form id="reportForm">
+      <select id="issue" required>
+  <option value="">Select Issue Type</option>
+  <option value="Garbage">Garbage</option>
+  <option value="Streetlight">Streetlight</option>
+  <option value="Flooding">Flooding</option>
+  <option value="Noise Complaint">Noise Complaint</option>
+  <option value="Road Damage">Road Damage</option>
+  <option value="Others">Others</option>
+</select>
+
+      <textarea id="description" placeholder="Description" required></textarea>
+      <input id="location" placeholder="Location" required>
+      <button type="submit">Submit Report</button>
     </form>
-
-    <h3>Your Submitted Reports</h3>
-    <div id="reportList" class="report-list"></div>
+    <div id="reportList"></div>
   </main>
 
   <script src="script.js"></script>

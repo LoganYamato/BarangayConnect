@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BarangayConnect | Register</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="navbar">
+    <img src="logo.png" alt="Barangay Logo" class="logo">
+    <h1>BarangayConnect</h1>
+  </header>
+
+  <main class="container">
+    <section class="form-section">
+      <h2>Register</h2>
+      <form id="registerForm">
+        <input type="text" id="registerName" placeholder="Full Name" required>
+        <input type="email" id="registerEmail" placeholder="Email" required>
+        <input type="password" id="registerPassword" placeholder="Password" required>
+        <select id="registerRole" required>
+          <option value="">Select Role</option>
+          <option value="resident">Resident</option>
+          <option value="official">Official</option>
+        </select>
+        <button type="submit">Register</button>
+        <p>Already have an account? <a href="index.html">Login here</a></p>
+      </form>
+      <p id="registerMessage" class="message"></p>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 BarangayConnect. All rights reserved.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

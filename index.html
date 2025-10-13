@@ -1,37 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BarangayConnect Prototype</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BarangayConnect | Login</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <nav class="navbar">
-    <div class="logo">BarangayConnect</div>
-  </nav>
+  <header class="navbar">
+    <img src="logo.png" alt="Barangay Logo" class="logo">
+    <h1>BarangayConnect</h1>
+  </header>
 
-  <main class="centered">
-    <h1>Welcome to BarangayConnect</h1>
-    <p>A citizen reporting and announcement system for your barangay.</p>
-
-    <div class="card-container">
-      <div class="card">
-        <h2>Resident Portal</h2>
-        <p>Report issues, view announcements, and track your submissions.</p>
-        <a href="resident.html" class="btn">Go to Resident</a>
-      </div>
-
-      <div class="card">
-        <h2>Official Dashboard</h2>
-        <p>Review reports, update statuses, and communicate with residents.</p>
-        <a href="official.html" class="btn">Go to Official</a>
-      </div>
-    </div>
+  <main class="container">
+    <section class="form-section">
+      <h2>Login</h2>
+      <form id="loginForm">
+        <input type="email" id="loginEmail" placeholder="Email" required>
+        <input type="password" id="loginPassword" placeholder="Password" required>
+        <button type="submit">Login</button>
+        <p>Don't have an account? <a href="register.html">Register here</a></p>
+      </form>
+      <p id="loginMessage" class="message"></p>
+    </section>
   </main>
 
   <footer>
-    <p>© 2025 BarangayConnect | Proof of Concept</p>
+    <p>&copy; 2025 BarangayConnect. All rights reserved.</p>
   </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
