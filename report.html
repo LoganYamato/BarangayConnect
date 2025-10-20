@@ -98,6 +98,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
+            const form = document.getElementById('reportForm');
             const brgySelect = document.getElementById('brgy');
             const streetGroup = document.getElementById('street-group');
             const streetSelect = document.getElementById('street');
@@ -150,6 +151,12 @@
 
             brgySelect.addEventListener('change', updateStreets);
             streetSelect.addEventListener('change', updateDetailsVisibility);
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                alert("Report submitted. Thank you for your feedback!");
+                
+            });
         });
     </script>
     <script src="script.js"></script>
