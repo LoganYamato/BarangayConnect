@@ -1,21 +1,26 @@
-// Simulated Firebase initialization (for proof-of-concept)
-const firebaseConfig = {
-  apiKey: "demo",
-  authDomain: "demo.firebaseapp.com",
-  projectId: "demo",
-};
-
-// Default user database
+// --- Ensure LGU account always exists ---
 const defaultUsers = [
   { email: "official@barangay.gov", password: "official123", role: "official", name: "Brgy. Official" },
   { email: "resident1@gmail.com", password: "resident123", role: "resident", name: "Resident One" },
   { email: "resident2@gmail.com", password: "resident123", role: "resident", name: "Resident Two" },
-  { email: "lgu@province.gov", password: "lgu123", role: "lgu", name: "Provincial LGU Officer" } // ✅ LGU account
+  { email: "lgu@province.gov", password: "lgu123", role: "lgu", name: "Provincial LGU Officer" } // ✅ LGU Account
 ];
 
-// Merge saved users (if any)
-const storedUsers = JSON.parse(localStorage.getItem("users")) || [];
-const users = [...defaultUsers, ...storedUsers.filter(su => !defaultUsers.some(du => du.email === su.email))];
+// Get any previously stored users
+let storedUsers = JSON.parse(localStorage.getItem("users")) || [];
+
+// Merge stored users with default users (avoid duplicates)
+defaultUsers.forEach(defaultUser => {
+  if (!storedUsers.some(u => u.email === defaultUser.email)) {
+    storedUsers.push(defaultUser);
+  }
+});
+
+// Save merged list back to localStorage
+localStorage.setItem("users", JSON.stringify(storedUsers));
+
+// Use this merged list for the app
+const users = JSON.parse(localStorage.getItem("users")) || [];
 
 // Local storage reports
 const reports = JSON.parse(localStorage.getItem("reports")) || [];
@@ -61,14 +66,17 @@ if (registerForm) {
     const role = document.getElementById("registerRole").value;
 
     const msg = document.getElementById("registerMessage");
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+
     if (users.some(u => u.email === email)) {
       msg.textContent = "Email already registered.";
       return;
     }
 
     const newUser = { email, password, role, name };
-    storedUsers.push(newUser);
-    localStorage.setItem("users", JSON.stringify(storedUsers));
+    users.push(newUser);
+    localStorage.setItem("users", JSON.stringify(users));
+
     msg.textContent = "Registration successful!";
     setTimeout(() => (window.location.href = "index.html"), 1000);
   });
