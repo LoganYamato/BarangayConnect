@@ -5,13 +5,17 @@ const firebaseConfig = {
   projectId: "demo",
 };
 
-// Dummy user database (for offline testing)
-const users = [
+// Default user database
+const defaultUsers = [
   { email: "official@barangay.gov", password: "official123", role: "official", name: "Brgy. Official" },
   { email: "resident1@gmail.com", password: "resident123", role: "resident", name: "Resident One" },
   { email: "resident2@gmail.com", password: "resident123", role: "resident", name: "Resident Two" },
-  { email: "lgu@province.gov", password: "lgu123", role: "lgu", name: "Provincial LGU Officer" } // NEW LGU ACCOUNT
+  { email: "lgu@province.gov", password: "lgu123", role: "lgu", name: "Provincial LGU Officer" } // ✅ LGU account
 ];
+
+// Merge saved users (if any)
+const storedUsers = JSON.parse(localStorage.getItem("users")) || [];
+const users = [...defaultUsers, ...storedUsers.filter(su => !defaultUsers.some(du => du.email === su.email))];
 
 // Local storage reports
 const reports = JSON.parse(localStorage.getItem("reports")) || [];
@@ -30,13 +34,12 @@ if (loginForm) {
       localStorage.setItem("currentUser", JSON.stringify(user));
       msg.textContent = "Login successful!";
       setTimeout(() => {
-        //  Role-based redirect
         if (user.role === "official") {
           window.location.href = "official.html";
         } else if (user.role === "resident") {
           window.location.href = "resident.html";
         } else if (user.role === "lgu") {
-          window.location.href = "lgu.html"; // Redirect LGU users here
+          window.location.href = "lgu.html";
         } else {
           msg.textContent = "Unknown role. Please contact admin.";
         }
@@ -63,7 +66,9 @@ if (registerForm) {
       return;
     }
 
-    users.push({ email, password, role, name });
+    const newUser = { email, password, role, name };
+    storedUsers.push(newUser);
+    localStorage.setItem("users", JSON.stringify(storedUsers));
     msg.textContent = "Registration successful!";
     setTimeout(() => (window.location.href = "index.html"), 1000);
   });
