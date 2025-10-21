@@ -1,44 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Resident Dashboard | BarangayConnect</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report | BarangayConnect</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .container h2 {
+            padding-top: 5%;
+        }
+        #description {
+            height: 150px;
+            resize: none;
+        }
+        
+        .container {
+            padding: 0 20px;
+        }
+
+        #reportForm textarea {
+            box-sizing: border-box;
+            width: 98%;
+            margin-right: 2%;
+        }
+
+        #reportForm input[type="file"] {
+            display: block;
+            margin: 10px 0 20px 0;
+            padding: 10px 0;
+            width: 98%;
+        }
+
+        #street-group,
+        #details-group {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-  <header class="navbar">
-    <img src="logo.png" alt="Barangay Logo" class="logo">
-    <h1>BarangayConnect</h1>
-    <nav>
-      <button id="logoutBtn" class="logout">Logout</button>
-    </nav>
-  </header>
+    <header class="navbar">
+        <img src="logo.png" alt="Barangay Logo" class="logo">
+        <h1>BarangayConnect</h1>
+        <nav>
+            <button id="logoutBtn" class="logout">Logout</button>
+        </nav>
+    </header>
 
-  <main class="container">
-    <h2>Welcome, Resident!</h2>
-    <form id="reportForm">
-      <select id="issue" required>
-  <option value="">Select Issue Type</option>
-  <option value="Garbage">Garbage</option>
-  <option value="Streetlight">Streetlight</option>
-  <option value="Flooding">Flooding</option>
-  <option value="Noise Complaint">Noise Complaint</option>
-  <option value="Road Damage">Road Damage</option>
-  <option value="Others">Others</option>
-</select>
-
-      <textarea id="description" placeholder="Description" required></textarea>
-      <input id="location" placeholder="Location" required>
-      <button type="submit">Submit Report</button>
-    </form>
-    <div id="reportList"></div>
-  </main>
+    <main class="container">
+        <h2>Welcome, Resident!</h2>
+        <form id="reportForm">
+            <select id="issue" required>
+                <option value="">Choose Category</option>
+                <option>Waste</option>
+                <option>Road</option>
+                <option>Safety</option>
+                <option>Health</option>
+            </select>
+            <select id="brgy" required>
+                <option value="">Select Barangay</option>
+                <option value="Santa Cruz">Santa Cruz</option>
+            </select>
+            
+            <div id="street-group">
+                <select id="street" required>
+                    <option value="">Select Street</option>
+                    <option data-brgy="Santa Cruz">Chino Roces Ave</option>
+                    <option data-brgy="Santa Cruz">Davila</option>
+                    <option data-brgy="Santa Cruz">Kakarong</option>
+                    <option data-brgy="Santa Cruz">Kalayaan Ave</option>
+                    <option data-brgy="Santa Cruz">Manchas</option>
+                    <option data-brgy="Santa Cruz">Mascardo</option>
+                    <option data-brgy="Santa Cruz">Martinez Unidos</option>
+                    <option data-brgy="Santa Cruz">Metropolitan Ave</option>
+                    <option data-brgy="Santa Cruz">Montojo</option>
+                    <option data-brgy="Santa Cruz">Pablo Ocampo Sr. Ext</option>
+                    <option data-brgy="Santa Cruz">Panama</option>
+                    <option data-brgy="Santa Cruz">Ponte</option>
+                    <option data-brgy="Santa Cruz">South Ave</option>
+                    <option data-brgy="Santa Cruz">Suez</option>
+                    <option data-brgy="Santa Cruz">Venecia</option>
+                    <option data-brgy="Santa Cruz">Visita</option>
+                    <option data-brgy="Santa Cruz">Yague</option>
+                    <option data-brgy="Santa Cruz">Zapote</option>
+                </select>
+            </div>
+            
+            <div id="details-group">
+                <textarea id="description" placeholder="Description" required></textarea>
+                <input type="file" id="imageUpload" name="imageUpload" accept="image/*">
+                <button type="submit">Submit Report</button>
+            </div>
+        </form>
+        <div id="reportList"></div>
+    </main>
 
   <footer class="foot"><small>BarangayConnect — Resident View</small></footer>
 
-  <!-- shared script -->
-  <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const form = document.getElementById('reportForm');
+            const brgySelect = document.getElementById('brgy');
+            const streetGroup = document.getElementById('street-group');
+            const streetSelect = document.getElementById('street');
+            const detailsGroup = document.getElementById('details-group');
+            const streetOptions = streetSelect.querySelectorAll('option');
+
+            const updateDetailsVisibility = () => {
+                const isBrgySelected = brgySelect.value !== "";
+                const isStreetSelected = streetSelect.value !== "";
+
+                if (isBrgySelected && isStreetSelected) {
+                    detailsGroup.style.display = 'block';
+                } else {
+                    detailsGroup.style.display = 'none';
+                }
+            };
+
+            const updateStreets = () => {
+                const selectedBrgy = brgySelect.value;
+                
+                if (selectedBrgy !== "") {
+                    streetGroup.style.display = 'block';
+                } else {
+                    streetGroup.style.display = 'none';
+                    streetSelect.value = "";
+                    updateDetailsVisibility();
+                    return;
+                }
+
+                streetOptions.forEach(option => {
+                    const optionBrgy = option.getAttribute('data-brgy');
+                    if (option.value === "") {
+                        option.style.display = 'block';
+                        return;
+                    }
+
+                    if (optionBrgy === selectedBrgy) {
+                        option.style.display = 'block';
+                    } else {
+                        option.style.display = 'none';
+                        if (option.selected) {
+                            streetSelect.value = "";
+                        }
+                    }
+                });
+                updateDetailsVisibility();
+            };
+
+            updateStreets();
+
+            brgySelect.addEventListener('change', updateStreets);
+            streetSelect.addEventListener('change', updateDetailsVisibility);
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                alert("Report submitted. Thank you for your feedback!");
+                
+            });
+        });
+    </script>
+    <script src="script.js"></script>
 </body>
 </html>
-
