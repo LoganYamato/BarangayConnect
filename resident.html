@@ -118,7 +118,7 @@
 
             const updateStreets = () => {
                 const selectedBrgy = brgySelect.value;
-                
+
                 if (selectedBrgy !== "") {
                     streetGroup.style.display = 'block';
                 } else {
@@ -154,8 +154,34 @@
 
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
+
+                const issue = document.getElementById('issue').value;
+                const brgy = document.getElementById('brgy').value;
+                const street = document.getElementById('street').value;
+                const description = document.getElementById('description').value.trim();
+                const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+
+                const reports = JSON.parse(localStorage.getItem("reports")) || [];
+
+                const newReport = {
+                    id: Date.now(),
+                    issueType: issue,
+                    barangay: brgy,
+                    location: street,
+                    desc: description,
+                    name: currentUser?.name || "Anonymous",
+                    author: currentUser?.name || "Anonymous",
+                    status: "Pending",
+                    timestamp: new Date().toLocaleString()
+                };
+
+                reports.push(newReport);
+                localStorage.setItem("reports", JSON.stringify(reports));
+
                 alert("Report submitted. Thank you for your feedback!");
-                
+                form.reset();
+                streetGroup.style.display = 'none';
+                detailsGroup.style.display = 'none';
             });
         });
     </script>

@@ -68,33 +68,15 @@ if (logoutBtn) {
   });
 }
 
-// Handle report submission (Resident)
-const reportForm = document.getElementById("reportForm");
-if (reportForm) {
-  reportForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const issue = document.getElementById("issue").value.trim();
-    const desc = document.getElementById("description").value.trim();
-    const location = document.getElementById("location").value.trim();
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    const newReport = {
-      id: Date.now(),
-      issue, desc, location,
-      author: currentUser?.name || "Anonymous"
-    };
-    reports.push(newReport);
-    localStorage.setItem("reports", JSON.stringify(reports));
-    alert("Report submitted successfully!");
-    reportForm.reset();
-  });
-}
+// Handle report submission (Resident) - now handled in resident.html inline script
 
 // Display reports (Official)
 const reportReviewList = document.getElementById("reportReviewList");
 if (reportReviewList) {
-  reports.forEach(r => {
+  const loadedReports = JSON.parse(localStorage.getItem("reports")) || [];
+  loadedReports.forEach(r => {
     const li = document.createElement("li");
-    li.textContent = `${r.issue} (${r.location}) — reported by ${r.author}`;
+    li.textContent = `${r.issueType || r.issue} (${r.location}) — reported by ${r.author || r.name}`;
     reportReviewList.appendChild(li);
   });
 }
