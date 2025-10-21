@@ -9,7 +9,8 @@ const firebaseConfig = {
 const users = [
   { email: "official@barangay.gov", password: "official123", role: "official", name: "Brgy. Official" },
   { email: "resident1@gmail.com", password: "resident123", role: "resident", name: "Resident One" },
-  { email: "resident2@gmail.com", password: "resident123", role: "resident", name: "Resident Two" }
+  { email: "resident2@gmail.com", password: "resident123", role: "resident", name: "Resident Two" },
+  { email: "lgu@province.gov", password: "lgu123", role: "lgu", name: "Provincial LGU Officer" } // NEW LGU ACCOUNT
 ];
 
 // Local storage reports
@@ -29,7 +30,16 @@ if (loginForm) {
       localStorage.setItem("currentUser", JSON.stringify(user));
       msg.textContent = "Login successful!";
       setTimeout(() => {
-        window.location.href = user.role === "official" ? "official.html" : "resident.html";
+        //  Role-based redirect
+        if (user.role === "official") {
+          window.location.href = "official.html";
+        } else if (user.role === "resident") {
+          window.location.href = "resident.html";
+        } else if (user.role === "lgu") {
+          window.location.href = "lgu.html"; // Redirect LGU users here
+        } else {
+          msg.textContent = "Unknown role. Please contact admin.";
+        }
       }, 800);
     } else {
       msg.textContent = "Invalid credentials. Please try again.";
@@ -67,8 +77,6 @@ if (logoutBtn) {
     window.location.href = "index.html";
   });
 }
-
-// Handle report submission (Resident) - now handled in resident.html inline script
 
 // Display reports (Official)
 const reportReviewList = document.getElementById("reportReviewList");
