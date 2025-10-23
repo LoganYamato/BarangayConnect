@@ -1,190 +1,143 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report | BarangayConnect</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        .container h2 {
-            padding-top: 5%;
-        }
-        #description {
-            height: 150px;
-            resize: none;
-        }
-        
-        .container {
-            padding: 0 20px;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resident Dashboard | BarangayConnect</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .container h2 {
+      padding-top: 5%;
+    }
 
-        #reportForm textarea {
-            box-sizing: border-box;
-            width: 98%;
-            margin-right: 2%;
-        }
+    nav a {
+      color: white;
+      margin: 0 10px;
+      text-decoration: none;
+      font-weight: bold;
+    }
 
-        #reportForm input[type="file"] {
-            display: block;
-            margin: 10px 0 20px 0;
-            padding: 10px 0;
-            width: 98%;
-        }
+    nav a:hover {
+      text-decoration: underline;
+    }
 
-        #street-group,
-        #details-group {
-            display: none;
-        }
-    </style>
+    .chart-section {
+      margin-top: 20px;
+    }
+
+    .chart {
+      background: #eaf2ff;
+      border-radius: 10px;
+      height: 200px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #004aad;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-align: center;
+      flex-direction: column;
+      transition: 0.3s ease;
+    }
+
+    .chart:hover {
+      background: #dce9ff;
+      transform: translateY(-3px);
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    @media (max-width: 600px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
-    <header class="navbar">
-        <img src="logo.png" alt="Barangay Logo" class="logo">
-        <h1>BarangayConnect</h1>
-        <nav>
-            <button id="logoutBtn" class="logout">Logout</button>
-        </nav>
-    </header>
+  <header class="navbar">
+    <img src="logo.png" alt="Barangay Logo" class="logo">
+    <h1>BarangayConnect</h1>
+    <nav>
+      <a href="resident.html">Dashboard</a>
+      <a href="report.html">Report</a>
+      <a href="official.html">Officials</a>
+      <button id="logoutBtn" class="logout">Logout</button>
+    </nav>
+  </header>
 
-    <main class="container">
-        <h2>Welcome, Resident!</h2>
-        <form id="reportForm">
-            <select id="issue" required>
-                <option value="">Choose Category</option>
-                <option>Waste</option>
-                <option>Road</option>
-                <option>Safety</option>
-                <option>Health</option>
-            </select>
-            <select id="brgy" required>
-                <option value="">Select Barangay</option>
-                <option value="Santa Cruz">Santa Cruz</option>
-            </select>
-            
-            <div id="street-group">
-                <select id="street" required>
-                    <option value="">Select Street</option>
-                    <option data-brgy="Santa Cruz">Chino Roces Ave</option>
-                    <option data-brgy="Santa Cruz">Davila</option>
-                    <option data-brgy="Santa Cruz">Kakarong</option>
-                    <option data-brgy="Santa Cruz">Kalayaan Ave</option>
-                    <option data-brgy="Santa Cruz">Manchas</option>
-                    <option data-brgy="Santa Cruz">Mascardo</option>
-                    <option data-brgy="Santa Cruz">Martinez Unidos</option>
-                    <option data-brgy="Santa Cruz">Metropolitan Ave</option>
-                    <option data-brgy="Santa Cruz">Montojo</option>
-                    <option data-brgy="Santa Cruz">Pablo Ocampo Sr. Ext</option>
-                    <option data-brgy="Santa Cruz">Panama</option>
-                    <option data-brgy="Santa Cruz">Ponte</option>
-                    <option data-brgy="Santa Cruz">South Ave</option>
-                    <option data-brgy="Santa Cruz">Suez</option>
-                    <option data-brgy="Santa Cruz">Venecia</option>
-                    <option data-brgy="Santa Cruz">Visita</option>
-                    <option data-brgy="Santa Cruz">Yague</option>
-                    <option data-brgy="Santa Cruz">Zapote</option>
-                </select>
-            </div>
-            
-            <div id="details-group">
-                <textarea id="description" placeholder="Description" required></textarea>
-                <input type="file" id="imageUpload" name="imageUpload" accept="image/*">
-                <button type="submit">Submit Report</button>
-            </div>
-        </form>
-        <div id="reportList"></div>
-    </main>
+  <main class="container">
+    <h2 id="welcomeText">Welcome, Resident!</h2>
 
-  <footer class="foot"><small>BarangayConnect — Resident View</small></footer>
+    <section class="chart-section">
+      <h3>Community Statistics (Santa Cruz, Makati)</h3>
+      <div class="dashboard-grid">
+        <div class="chart" id="wasteChart">Waste Reports: 0</div>
+        <div class="chart" id="roadChart">Road Issues: 0</div>
+        <div class="chart" id="safetyChart">Safety Concerns: 0</div>
+        <div class="chart" id="healthChart">Health Reports: 0</div>
+      </div>
+    </section>
+  </main>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', (event) => {
-            const form = document.getElementById('reportForm');
-            const brgySelect = document.getElementById('brgy');
-            const streetGroup = document.getElementById('street-group');
-            const streetSelect = document.getElementById('street');
-            const detailsGroup = document.getElementById('details-group');
-            const streetOptions = streetSelect.querySelectorAll('option');
+  <footer class="foot">
+    <small>BarangayConnect — Resident Dashboard (Santa Cruz, Makati)</small>
+  </footer>
 
-            const updateDetailsVisibility = () => {
-                const isBrgySelected = brgySelect.value !== "";
-                const isStreetSelected = streetSelect.value !== "";
+  <script>
+    // === AUTH CHECK ===
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    if (!currentUser) {
+      window.location.href = "index.html";
+    } else if (currentUser.role !== "resident") {
+      alert("Unauthorized access. Redirecting...");
+      window.location.href = "index.html";
+    } else {
+      document.getElementById("welcomeText").textContent =
+        `Welcome, ${currentUser.name || "Resident"}!`;
+    }
 
-                if (isBrgySelected && isStreetSelected) {
-                    detailsGroup.style.display = 'block';
-                } else {
-                    detailsGroup.style.display = 'none';
-                }
-            };
+    // === LOGOUT HANDLER ===
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("currentUser");
+      window.location.href = "index.html";
+    });
 
-            const updateStreets = () => {
-                const selectedBrgy = brgySelect.value;
+    // === CHART DATA ===
+    document.addEventListener("DOMContentLoaded", () => {
+      const reports = JSON.parse(localStorage.getItem("reports")) || [];
 
-                if (selectedBrgy !== "") {
-                    streetGroup.style.display = 'block';
-                } else {
-                    streetGroup.style.display = 'none';
-                    streetSelect.value = "";
-                    updateDetailsVisibility();
-                    return;
-                }
+      // Count by category
+      const counts = { Waste: 0, Road: 0, Safety: 0, Health: 0 };
+      reports.forEach(r => {
+        if (counts[r.issueType] !== undefined) counts[r.issueType]++;
+      });
 
-                streetOptions.forEach(option => {
-                    const optionBrgy = option.getAttribute('data-brgy');
-                    if (option.value === "") {
-                        option.style.display = 'block';
-                        return;
-                    }
+      // Update display
+      document.getElementById("wasteChart").textContent = `Waste Reports: ${counts.Waste}`;
+      document.getElementById("roadChart").textContent = `Road Issues: ${counts.Road}`;
+      document.getElementById("safetyChart").textContent = `Safety Concerns: ${counts.Safety}`;
+      document.getElementById("healthChart").textContent = `Health Reports: ${counts.Health}`;
 
-                    if (optionBrgy === selectedBrgy) {
-                        option.style.display = 'block';
-                    } else {
-                        option.style.display = 'none';
-                        if (option.selected) {
-                            streetSelect.value = "";
-                        }
-                    }
-                });
-                updateDetailsVisibility();
-            };
-
-            updateStreets();
-
-            brgySelect.addEventListener('change', updateStreets);
-            streetSelect.addEventListener('change', updateDetailsVisibility);
-
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                const issue = document.getElementById('issue').value;
-                const brgy = document.getElementById('brgy').value;
-                const street = document.getElementById('street').value;
-                const description = document.getElementById('description').value.trim();
-                const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-
-                const reports = JSON.parse(localStorage.getItem("reports")) || [];
-
-                const newReport = {
-                    id: Date.now(),
-                    issueType: issue,
-                    barangay: brgy,
-                    location: street,
-                    desc: description,
-                    name: currentUser?.name || "Anonymous",
-                    author: currentUser?.name || "Anonymous",
-                    status: "Pending",
-                    timestamp: new Date().toLocaleString()
-                };
-
-                reports.push(newReport);
-                localStorage.setItem("reports", JSON.stringify(reports));
-
-                alert("Report submitted. Thank you for your feedback!");
-                form.reset();
-                streetGroup.style.display = 'none';
-                detailsGroup.style.display = 'none';
-            });
-        });
-    </script>
-    <script src="script.js"></script>
+      // Add update timestamp
+      const dateNow = new Date().toLocaleDateString();
+      const charts = document.querySelectorAll(".chart");
+      charts.forEach(chart => {
+        const p = document.createElement("p");
+        p.style.fontSize = "0.8em";
+        p.style.color = "#555";
+        p.textContent = "Updated as of " + dateNow;
+        chart.appendChild(p);
+      });
+    });
+  </script>
+  <script src="script.js"></script>
 </body>
 </html>
+
+
+
