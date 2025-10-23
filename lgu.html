@@ -16,22 +16,6 @@
       color: white;
       padding: 20px;
       text-align: center;
-      position: relative;
-    }
-    #logoutBtn {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: #f44336;
-      border: none;
-      color: white;
-      padding: 10px 18px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    #logoutBtn:hover {
-      background: #d32f2f;
     }
     main {
       max-width: 1200px;
@@ -95,8 +79,7 @@
 <body>
   <header>
     <h1>LGU Dashboard - Makati City</h1>
-    <h3 id="userInfo">Barangay-Level Monitoring System</h3>
-    <button id="logoutBtn">Logout</button>
+    <h3>Barangay-Level Monitoring System</h3>
   </header>
 
   <main>
@@ -153,22 +136,6 @@
   </main>
 
   <script>
-    // ✅ Verify LGU login
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    if (!currentUser || currentUser.role !== "lgu") {
-      alert("Access denied. LGU login required.");
-      window.location.href = "index.html";
-    } else {
-      document.getElementById("userInfo").textContent = `Welcome, ${currentUser.name} (${currentUser.email})`;
-    }
-
-    // ✅ Logout
-    document.getElementById("logoutBtn").addEventListener("click", () => {
-      localStorage.removeItem("currentUser");
-      window.location.href = "index.html";
-    });
-
-    // ✅ Reports handling
     const reports = JSON.parse(localStorage.getItem("reports")) || [];
 
     const totalReports = document.getElementById("totalReports");
@@ -178,6 +145,7 @@
     const tableBody = document.querySelector("#reportTable tbody");
     const filter = document.getElementById("barangayFilter");
 
+    // Populate counts
     function updateSummary() {
       totalReports.textContent = reports.length;
       pendingCount.textContent = reports.filter(r => r.status === "Pending").length;
@@ -185,6 +153,7 @@
       resolvedCount.textContent = reports.filter(r => r.status === "Resolved").length;
     }
 
+    // Populate reports
     function loadReports(filterValue = "all") {
       tableBody.innerHTML = "";
       reports
@@ -202,8 +171,11 @@
         });
     }
 
-    filter.addEventListener("change", e => loadReports(e.target.value));
+    filter.addEventListener("change", e => {
+      loadReports(e.target.value);
+    });
 
+    // Prepare data for charts
     function updateCharts() {
       const barangayCounts = {};
       const issueTypeCounts = {};
@@ -222,19 +194,36 @@
       issueTypeChart.update();
     }
 
+    // Initialize Charts
     const barangayChart = new Chart(document.getElementById("barangayChart"), {
       type: "bar",
-      data: { labels: [], datasets: [{ label: "Reports per Barangay", backgroundColor: "#003b8e", data: [] }] }
+      data: {
+        labels: [],
+        datasets: [{
+          label: "Reports per Barangay",
+          backgroundColor: "#003b8e",
+          data: []
+        }]
+      }
     });
 
     const issueTypeChart = new Chart(document.getElementById("issueTypeChart"), {
       type: "pie",
-      data: { labels: [], datasets: [{ label: "Issues", backgroundColor: ["#ff9800", "#4caf50", "#f44336", "#2196f3"], data: [] }] }
+      data: {
+        labels: [],
+        datasets: [{
+          label: "Issues",
+          backgroundColor: ["#ff9800", "#4caf50", "#f44336", "#2196f3"],
+          data: []
+        }]
+      }
     });
 
+    // Initialize dashboard
     updateSummary();
     loadReports();
     updateCharts();
   </script>
 </body>
 </html>
+
