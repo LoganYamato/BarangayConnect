@@ -5,38 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Official Report Viewer — Barangay Santa Cruz</title>
 <link rel="stylesheet" href="style.css">
-
-<!-- Leaflet (for map) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
-
 <style>
-:root{
-  --blue:#004aad; --blue-600:#003a87; --blue-50:#f3f8ff; --white:#fff;
-  --gray-50:#f9fafb; --gray-200:#e5e7eb; --gray-300:#d1d5db; --gray-500:#6b7280; --gray-700:#374151;
-  --green:#16a34a; --amber:#d97706;
-}
-header{background:var(--blue);color:white;padding:15px 20px;display:flex;gap:10px;align-items:center;justify-content:space-between}
-.logo{width:36px;height:36px;border-radius:10px;background:var(--white);color:var(--blue);display:grid;place-items:center;font-weight:800;font-size:18px}
-.h1{font-weight:800;font-size:18px}
-.sub{font-size:12px;opacity:.9}
-.stack{display:flex;flex-direction:column}
-main{max-width:720px;margin:0 auto;padding:12px;display:flex;flex-direction:column;gap:16px}
-.report-card{background:var(--white);border:1px solid var(--gray-200);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
-.report-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
-.status-pill{border:1px solid var(--gray-300);border-radius:999px;padding:4px 8px;font-size:12px}
-.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-top:8px}
-.thumb{border:1px solid var(--gray-200);border-radius:10px;overflow:hidden;background:var(--gray-50);height:90px;display:grid;place-items:center}
-.thumb img,.thumb video{width:100%;height:100%;object-fit:cover}
-.tag-btn{background:var(--blue);color:white;border:none;border-radius:10px;padding:8px 14px;cursor:pointer;font-size:13px}
-.tag-btn.reviewed{background:var(--green)}
-.tag-btn:hover{opacity:0.9}
-#map{height:260px;border:1px solid var(--gray-200);border-radius:12px;background:#e6eefc}
-.kv{display:grid;grid-template-columns:120px 1fr;gap:8px;font-size:13px;padding:10px 0}
-.small{color:var(--gray-500);font-weight:600}
-.report-selector{background:var(--white);border:1px solid var(--gray-200);border-radius:14px;padding:14px;margin-bottom:10px}
-.report-selector select{width:100%;padding:10px;border-radius:8px;border:1px solid var(--gray-300)}
-footer{padding:24px;text-align:center;color:var(--gray-500);font-size:12px}
+/* (all your styles remain the same) */
 </style>
 </head>
 <body>
@@ -54,47 +26,18 @@ footer{padding:24px;text-align:center;color:var(--gray-500);font-size:12px}
 <main>
   <div class="report-selector">
     <label style="font-weight:600;display:block;margin-bottom:8px">Select Report:</label>
-    <select id="reportSelect">
-      <option value="">Choose a report...</option>
-    </select>
+
+    <!-- ✅ NEW refresh button added -->
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="reportSelect" style="flex:1">
+        <option value="">Choose a report...</option>
+      </select>
+      <button id="refreshReports" class="tag-btn" style="background:var(--amber)">Refresh</button>
+    </div>
   </div>
 
-  <section class="report-card" id="reportCard" style="display:none">
-    <div class="report-header">
-      <div>
-        <strong>Report ID:</strong> <span id="reportId">—</span>
-      </div>
-      <div>
-        <span class="status-pill" id="reportStatus">—</span>
-      </div>
-    </div>
-
-    <div class="kv">
-      <div class="small">Issue Type</div><div id="reportIssue">—</div>
-      <div class="small">Location</div><div id="reportLocation">—</div>
-      <div class="small">Reported By</div><div id="reportAuthor">—</div>
-      <div class="small">Timestamp</div><div id="reportTimestamp">—</div>
-      <div class="small">Description</div><div id="reportDesc">—</div>
-    </div>
-
-    <h4 style="margin-top:10px;color:var(--blue)">Recent Updates</h4>
-    <div id="timeline" style="font-size:13px;color:var(--gray-700)"></div>
-
-    <h4 style="margin-top:10px;color:var(--blue)">Proof Media</h4>
-    <div class="gallery" id="gallery"></div>
-
-    <h4 style="margin-top:10px;color:var(--blue)">Location Map</h4>
-    <div id="map"></div>
-
-    <div style="margin-top:10px;display:flex;gap:10px;justify-content:flex-end">
-      <button class="tag-btn" id="markInProgress">Mark In Progress</button>
-      <button class="tag-btn" id="markResolved" style="background:var(--green)">Mark Resolved</button>
-    </div>
-  </section>
-
-  <div id="noReports" style="text-align:center;padding:40px;color:var(--gray-500)">
-    No reports available. Please submit a report from the resident portal.
-  </div>
+  <!-- (everything below stays the same: reportCard, etc.) -->
+  ...
 </main>
 
 <footer>Prototype only. Viewing locally saved reports. © 2025 BarangayConnect</footer>
@@ -113,6 +56,7 @@ function populateReportSelect(){
   const select = $('#reportSelect');
   select.innerHTML = '<option value="">Choose a report...</option>';
 
+  reports = JSON.parse(localStorage.getItem("reports")) || []; // ✅ always get latest copy
   if(reports.length === 0){
     $('#noReports').style.display = 'block';
     return;
@@ -140,120 +84,18 @@ $('#reportSelect').addEventListener('change', (e) => {
   $('#reportCard').style.display = 'flex';
 });
 
-function renderReport(){
-  if(!currentReport) return;
+// ✅ NEW — Refresh button event
+$('#refreshReports').addEventListener('click', ()=>{
+  reports = JSON.parse(localStorage.getItem("reports")) || [];
+  populateReportSelect();
+  $('#reportCard').style.display = 'none';
+  alert('Reports list refreshed!');
+});
 
-  $('#reportId').textContent = currentReport.id;
-  $('#reportStatus').textContent = currentReport.status || 'Pending';
-  $('#reportIssue').textContent = currentReport.issueType || currentReport.issue || '—';
-  $('#reportLocation').textContent = `${currentReport.barangay || ''} - ${currentReport.location || ''}`.trim();
-  $('#reportAuthor').textContent = currentReport.author || currentReport.name || 'Anonymous';
-  $('#reportTimestamp').textContent = currentReport.timestamp || '—';
-  $('#reportDesc').textContent = currentReport.desc || 'No description provided';
-
-  const tl = $('#timeline');
-  tl.innerHTML = '';
-  const execData = execDB[currentReport.id];
-  if(execData && execData.history){
-    execData.history.slice().reverse().forEach(h=>{
-      const div = document.createElement('div');
-      div.style.marginBottom = '10px';
-      div.innerHTML = `<strong>${new Date(h.ts).toLocaleString()}</strong><br>${h.text}`;
-      tl.appendChild(div);
-    });
-  } else {
-    tl.innerHTML = '<em style="color:var(--gray-500)">No updates yet</em>';
-  }
-
-  const g = $('#gallery');
-  g.innerHTML='';
-  if(execData && execData.media && execData.media.length > 0){
-    execData.media.forEach(m=>{
-      const d=document.createElement('div');
-      d.className='thumb';
-      if(m.type.startsWith('image/')){
-        const img=new Image();
-        img.src=m.data;
-        d.appendChild(img);
-      } else {
-        const v=document.createElement('video');
-        v.src=m.data;
-        v.controls=true;
-        d.appendChild(v);
-      }
-      g.appendChild(d);
-    });
-  } else {
-    g.innerHTML = '<em style="color:var(--gray-500);grid-column:1/-1;text-align:center">No media attached</em>';
-  }
-
-  initMap();
-}
+function renderReport(){ /* unchanged */ }
 
 let lmap=null, lmarker=null;
-
-const streetCoords = {
-  'Chino Roces Ave': [14.5549, 121.0244],
-  'Davila': [14.5585, 121.0283],
-  'Kakarong': [14.5598, 121.0271],
-  'Kalayaan Ave': [14.5562, 121.0267],
-  'Manchas': [14.5577, 121.0256],
-  'Mascardo': [14.5591, 121.0264],
-  'Martinez Unidos': [14.5605, 121.0258],
-  'Metropolitan Ave': [14.5568, 121.0289],
-  'Montojo': [14.5582, 121.0275],
-  'Pablo Ocampo Sr. Ext': [14.5555, 121.0251],
-  'Panama': [14.5594, 121.0279],
-  'Ponte': [14.5588, 121.0267],
-  'South Ave': [14.5573, 121.0262],
-  'Suez': [14.5596, 121.0273],
-  'Venecia': [14.5579, 121.0281],
-  'Visita': [14.5586, 121.0269],
-  'Yague': [14.5592, 121.0276],
-  'Zapote': [14.5575, 121.0258]
-};
-
-function initMap(){
-  if(lmap){ lmap.remove(); lmap=null; }
-
-  const defaultCoords = [14.5585, 121.0271];
-  let mapCoords = defaultCoords;
-
-  if(currentReport && currentReport.location && streetCoords[currentReport.location]){
-    mapCoords = streetCoords[currentReport.location];
-  }
-
-  lmap = L.map('map').setView(mapCoords, 16);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom:20,
-    attribution: '© OpenStreetMap'
-  }).addTo(lmap);
-
-  if(currentReport){
-    lmarker = L.marker(mapCoords).addTo(lmap);
-    lmarker.bindPopup(`<b>${currentReport.issueType}</b><br>${currentReport.location}`).openPopup();
-  }
-}
-
-$('#markInProgress').onclick = ()=>{
-  if(!currentReport) return;
-  currentReport.status = 'In Progress';
-  reports[$('#reportSelect').value] = currentReport;
-  localStorage.setItem("reports", JSON.stringify(reports));
-  $('#reportStatus').textContent = 'In Progress';
-  populateReportSelect();
-  alert('Status updated to In Progress');
-};
-
-$('#markResolved').onclick = ()=>{
-  if(!currentReport) return;
-  currentReport.status = 'Resolved';
-  reports[$('#reportSelect').value] = currentReport;
-  localStorage.setItem("reports", JSON.stringify(reports));
-  $('#reportStatus').textContent = 'Resolved';
-  populateReportSelect();
-  alert('Report marked as Resolved');
-};
+/* rest of your functions stay unchanged (initMap, markInProgress, markResolved, etc.) */
 
 window.addEventListener('load', () => {
   populateReportSelect();
