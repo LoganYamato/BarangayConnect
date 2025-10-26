@@ -1,105 +1,182 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Official Report Viewer — Barangay Santa Cruz</title>
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
-<style>
-/* (all your styles remain the same) */
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Official Dashboard | BarangayConnect</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .container {
+      padding: 20px;
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    select {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      background: #fff;
+      font-size: 14px;
+    }
+    .report-card {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      margin: 10px 0;
+      padding: 15px;
+      background-color: #f9fafb;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .report-card h3 {
+      margin: 0 0 5px 0;
+      color: #374151;
+    }
+    .report-card p {
+      margin: 3px 0;
+      color: #555;
+    }
+    .report-img {
+      width: 100%;
+      max-height: 250px;
+      object-fit: cover;
+      margin-top: 10px;
+      border-radius: 8px;
+    }
+    footer {
+      text-align: center;
+      color: #6b7280;
+      font-size: 13px;
+      margin-top: 20px;
+      padding: 10px;
+    }
+  </style>
 </head>
+
 <body>
-<header>
-  <div style="display:flex;gap:10px;align-items:center">
-    <div class="logo">BC</div>
-    <div class="stack" style="gap:2px">
-      <div class="h1">Official Report Viewer</div>
-      <div class="sub">Barangay Santa Cruz, Makati City</div>
+  <header class="navbar">
+    <img src="logo.png" alt="Barangay Logo" class="logo" />
+    <h1>BarangayConnect</h1>
+    <nav>
+      <button id="logoutBtn" class="logout">Logout</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="toolbar">
+      <h2>Welcome, Barangay Official!</h2>
+      <div>
+        <label for="statusFilter" style="font-weight: 600; margin-right: 6px;">Filter:</label>
+        <select id="statusFilter">
+          <option value="all">All Reports</option>
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Resolved">Resolved</option>
+        </select>
+      </div>
     </div>
-  </div>
-  <button id="logoutBtn" class="tag-btn">Logout</button>
-</header>
 
-<main>
-  <div class="report-selector">
-    <label style="font-weight:600;display:block;margin-bottom:8px">Select Report:</label>
+    <div id="reportReviewList"></div>
+    <p id="statusMsg" style="text-align:center; color:#6b7280;"></p>
+  </main>
 
-    <!-- ✅ NEW refresh button added -->
-    <div style="display:flex;gap:8px;align-items:center">
-      <select id="reportSelect" style="flex:1">
-        <option value="">Choose a report...</option>
-      </select>
-      <button id="refreshReports" class="tag-btn" style="background:var(--amber)">Refresh</button>
-    </div>
-  </div>
+  <footer>
+    BarangayConnect — Official Dashboard | Prototype © 2025
+  </footer>
 
-  <!-- (everything below stays the same: reportCard, etc.) -->
-  ...
-</main>
+  <!-- ✅ Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 
-<footer>Prototype only. Viewing locally saved reports. © 2025 BarangayConnect</footer>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyD6f9Fo1aDebjEurvWFsffM33izUPUTylw",
+      authDomain: "iss-bc.firebaseapp.com",
+      projectId: "iss-bc",
+      storageBucket: "iss-bc.firebasestorage.app",
+      messagingSenderId: "455122393981",
+      appId: "1:455122393981:web:bdf281da744767c0064a14",
+      measurementId: "G-6VQLV0PG81"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+  </script>
 
-<script src="official.js"></script>
-<script>
-const $ = s=>document.querySelector(s);
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const reportList = document.getElementById("reportReviewList");
+      const msg = document.getElementById("statusMsg");
+      const filterSelect = document.getElementById("statusFilter");
 
-let reports = JSON.parse(localStorage.getItem("reports")) || [];
-let currentReport = null;
+      const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+      if (!currentUser || currentUser.role !== "official") {
+        window.location.href = "index.html";
+        return;
+      }
 
-const DBKEY = 'bc_exec_fw_min';
-let execDB = JSON.parse(localStorage.getItem(DBKEY)||'{}');
+      msg.textContent = "Loading reports...";
 
-function populateReportSelect(){
-  const select = $('#reportSelect');
-  select.innerHTML = '<option value="">Choose a report...</option>';
+      // Keeps reference to unsubscribe function
+      let unsubscribe = null;
 
-  reports = JSON.parse(localStorage.getItem("reports")) || []; // ✅ always get latest copy
-  if(reports.length === 0){
-    $('#noReports').style.display = 'block';
-    return;
-  }
+      function listenReports(filterValue) {
+        if (unsubscribe) unsubscribe(); // Stop previous listener
 
-  $('#noReports').style.display = 'none';
+        let query = db.collection("reports").orderBy("timestamp", "desc");
+        if (filterValue !== "all") {
+          query = query.where("status", "==", filterValue);
+        }
 
-  reports.forEach((r, idx) => {
-    const option = document.createElement('option');
-    option.value = idx;
-    option.textContent = `#${r.id} - ${r.issueType} at ${r.location} (${r.status})`;
-    select.appendChild(option);
-  });
-}
+        unsubscribe = query.onSnapshot(snapshot => {
+          reportList.innerHTML = "";
+          if (snapshot.empty) {
+            msg.textContent = "No reports found.";
+            return;
+          }
 
-$('#reportSelect').addEventListener('change', (e) => {
-  const idx = e.target.value;
-  if(idx === '') {
-    $('#reportCard').style.display = 'none';
-    return;
-  }
+          msg.textContent = "";
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const card = document.createElement("div");
+            card.classList.add("report-card");
 
-  currentReport = reports[idx];
-  renderReport();
-  $('#reportCard').style.display = 'flex';
-});
+            card.innerHTML = `
+              <h3>${data.issueType || "Unknown Issue"}</h3>
+              <p><strong>Barangay:</strong> ${data.barangay || "N/A"}</p>
+              <p><strong>Location:</strong> ${data.location || "N/A"}</p>
+              <p><strong>Description:</strong> ${data.desc || "No details"}</p>
+              <p><strong>Reported by:</strong> ${data.author || "Anonymous"}</p>
+              <p><strong>Status:</strong> <span style="color:${
+                data.status === "Resolved" ? "#16a34a" :
+                data.status === "In Progress" ? "#d97706" : "#dc2626"
+              }">${data.status || "Pending"}</span></p>
+              <p><small>${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString() : "No date"}</small></p>
+              ${data.image ? `<img src="${data.image}" class="report-img" alt="Proof Image" />` : ""}
+            `;
+            reportList.appendChild(card);
+          });
+        });
+      }
 
-// ✅ NEW — Refresh button event
-$('#refreshReports').addEventListener('click', ()=>{
-  reports = JSON.parse(localStorage.getItem("reports")) || [];
-  populateReportSelect();
-  $('#reportCard').style.display = 'none';
-  alert('Reports list refreshed!');
-});
+      // Load initial
+      listenReports("all");
 
-function renderReport(){ /* unchanged */ }
+      // Change filter dynamically
+      filterSelect.addEventListener("change", e => {
+        listenReports(e.target.value);
+      });
 
-let lmap=null, lmarker=null;
-/* rest of your functions stay unchanged (initMap, markInProgress, markResolved, etc.) */
-
-window.addEventListener('load', () => {
-  populateReportSelect();
-});
-</script>
+      // Logout
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        localStorage.removeItem("currentUser");
+        window.location.href = "index.html";
+      });
+    });
+  </script>
 </body>
 </html>
