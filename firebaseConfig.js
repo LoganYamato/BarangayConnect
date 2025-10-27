@@ -1,19 +1,17 @@
-// --- Firebase Setup ---
-// Import Firebase modules from CDN
+// firebase-config.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Your Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
+  apiKey: "AIzaSyB6Y_izKH1MEZVQlujYHjI4r9fhOdYKWZ0",
   authDomain: "iss-bc.firebaseapp.com",
   projectId: "iss-bc",
-  storageBucket: "iss-bc.firebasestorage.app",
+  storageBucket: "iss-bc.appspot.com",
   messagingSenderId: "455122393981",
   appId: "1:455122393981:web:bdf281da744767c0064a14",
   measurementId: "G-6VQLV0PG81"
 };
 
-// Initialize Firebase and Firestore
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase
+export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
