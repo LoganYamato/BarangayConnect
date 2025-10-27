@@ -1,31 +1,23 @@
-// --- Ensure LGU account always exists ---
+// === Default Accounts (with barangays) ===
 const defaultUsers = [
-  { email: "official@barangay.gov", password: "official123", role: "official", name: "Brgy. Official" },
-  { email: "resident1@gmail.com", password: "resident123", role: "resident", name: "Resident One" },
-  { email: "resident2@gmail.com", password: "resident123", role: "resident", name: "Resident Two" },
-  { email: "lgu@province.gov", password: "lgu123", role: "lgu", name: "Provincial LGU Officer" } // ✅ LGU Account
+  { email: "official@barangay.gov", password: "official123", role: "official", name: "Brgy. Official", barangay: "Santa Cruz" },
+  { email: "resident1@gmail.com", password: "resident123", role: "resident", name: "Resident One", barangay: "Santa Cruz" },
+  { email: "resident2@gmail.com", password: "resident123", role: "resident", name: "Resident Two", barangay: "Santa Cruz" },
+  { email: "lgu@province.gov", password: "lgu123", role: "lgu", name: "Provincial LGU Officer" }
 ];
 
-// Get any previously stored users
+// === Merge Default + Existing Users ===
 let storedUsers = JSON.parse(localStorage.getItem("users")) || [];
-
-// Merge stored users with default users (avoid duplicates)
 defaultUsers.forEach(defaultUser => {
   if (!storedUsers.some(u => u.email === defaultUser.email)) {
     storedUsers.push(defaultUser);
   }
 });
-
-// Save merged list back to localStorage
 localStorage.setItem("users", JSON.stringify(storedUsers));
 
-// Use this merged list for the app
 const users = JSON.parse(localStorage.getItem("users")) || [];
 
-// Local storage reports
-const reports = JSON.parse(localStorage.getItem("reports")) || [];
-
-// Handle login
+// === Handle Login ===
 const loginForm = document.getElementById("loginForm");
 if (loginForm) {
   loginForm.addEventListener("submit", (e) => {
@@ -39,15 +31,10 @@ if (loginForm) {
       localStorage.setItem("currentUser", JSON.stringify(user));
       msg.textContent = "Login successful!";
       setTimeout(() => {
-        if (user.role === "official") {
-          window.location.href = "official.html";
-        } else if (user.role === "resident") {
-          window.location.href = "resident.html";
-        } else if (user.role === "lgu") {
-          window.location.href = "lgu.html";
-        } else {
-          msg.textContent = "Unknown role. Please contact admin.";
-        }
+        if (user.role === "official") window.location.href = "official.html";
+        else if (user.role === "resident") window.location.href = "resident.html";
+        else if (user.role === "lgu") window.location.href = "lgu.html";
+        else msg.textContent = "Unknown role. Please contact admin.";
       }, 800);
     } else {
       msg.textContent = "Invalid credentials. Please try again.";
@@ -55,7 +42,7 @@ if (loginForm) {
   });
 }
 
-// Handle registration
+// === Handle Registration ===
 const registerForm = document.getElementById("registerForm");
 if (registerForm) {
   registerForm.addEventListener("submit", (e) => {
@@ -64,6 +51,7 @@ if (registerForm) {
     const email = document.getElementById("registerEmail").value.trim();
     const password = document.getElementById("registerPassword").value.trim();
     const role = document.getElementById("registerRole").value;
+    const barangay = document.getElementById("registerBarangay")?.value || "Santa Cruz"; // Default fallback
 
     const msg = document.getElementById("registerMessage");
     let users = JSON.parse(localStorage.getItem("users")) || [];
@@ -73,7 +61,7 @@ if (registerForm) {
       return;
     }
 
-    const newUser = { email, password, role, name };
+    const newUser = { email, password, role, name, barangay };
     users.push(newUser);
     localStorage.setItem("users", JSON.stringify(users));
 
@@ -82,7 +70,7 @@ if (registerForm) {
   });
 }
 
-// Handle logout
+// === Handle Logout (Global) ===
 const logoutBtn = document.getElementById("logoutBtn");
 if (logoutBtn) {
   logoutBtn.addEventListener("click", () => {
@@ -91,13 +79,31 @@ if (logoutBtn) {
   });
 }
 
-// Display reports (Official)
-const reportReviewList = document.getElementById("reportReviewList");
-if (reportReviewList) {
-  const loadedReports = JSON.parse(localStorage.getItem("reports")) || [];
-  loadedReports.forEach(r => {
-    const li = document.createElement("li");
-    li.textContent = `${r.issueType || r.issue} (${r.location}) — reported by ${r.author || r.name}`;
-    reportReviewList.appendChild(li);
-  });
+// === Local Reports (Fallback Only) ===
+const reportList = document.getElementById("reportList");
+if (reportList) {
+  try {
+    // Only run this if Firestore isn't already updating the list
+    if (!window.firestoreActive) {
+      const reports = JSON.parse(localStorage.getItem("reports")) || [];
+
+      if (reports.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "No reports found (local mode).";
+        li.style.textAlign = "center";
+        li.style.color = "#666";
+        reportList.appendChild(li);
+      } else {
+        reports.forEach(r => {
+          const li = document.createElement("li");
+          li.textContent = `${r.issueType || r.issue} — ${r.location} (${r.status || "Pending"})`;
+          li.style.padding = "10px";
+          li.style.borderBottom = "1px solid #ddd";
+          reportList.appendChild(li);
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Error rendering local reports:", err);
+  }
 }
