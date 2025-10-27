@@ -45,7 +45,18 @@
     #reportList li.selected{background:#e6f6ee;border-left:4px solid var(--blue);font-weight:600}
 #refreshBtn {
   padding: 8px 10px;
-  font-size: 14px;
+  font-size: 18px;
+  line-height: 1;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+}
+#refreshBtn:hover {
+  background: var(--blue);
+  color: white;
 }
     /* detail column */
     .detail-grid{display:flex;flex-direction:column;gap:12px}
@@ -99,7 +110,7 @@
         <option value="Resolved">Resolved</option>
       </select>
       <input id="searchInput" placeholder="Search issue / street" style="flex:1;padding:8px;border-radius:8px;border:1px solid #e6eefc" />
-      <button id="refreshBtn" class="btn secondary">Refresh</button>
+      <button id="refreshBtn" class="btn secondary">⟳</button>
     </div>
 
     <ul id="reportList" aria-live="polite"></ul>
