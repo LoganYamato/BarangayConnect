@@ -177,9 +177,11 @@
 <!-- === Firebase + Firestore logic (must load first) === -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, onSnapshot, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { 
+    getFirestore, collection, query, where, onSnapshot, updateDoc, doc 
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // === FIREBASE CONFIG ===
+  // === Firebase Config ===
   const firebaseConfig = {
     apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
     authDomain: "iss-bc.firebaseapp.com",
@@ -188,35 +190,34 @@
     messagingSenderId: "455122393981",
     appId: "1:455122393981:web:bdf281da744767c0064a14",
   };
+
+  // === Initialize Firebase ===
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // === AUTH CHECK ===
+  // === Auth Check ===
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  if (!currentUser) {
-    window.location.href = "index.html";
-  } else if (currentUser.role !== "official") {
+  if (!currentUser || currentUser.role !== "official") {
     alert("Unauthorized access. Redirecting...");
     window.location.href = "index.html";
-  } else {
-    document.getElementById("welcomeText").textContent =
-      `Welcome, ${currentUser.name || "Official"}!`;
   }
 
-  // === LOGOUT ===
-  document.getElementById("logoutBtn")?.addEventListener("click", () => {
+  // === Logout ===
+  document.getElementById("logoutBtn").addEventListener("click", () => {
     localStorage.removeItem("currentUser");
     window.location.href = "index.html";
   });
 
+  // === References ===
   const reportList = document.getElementById("reportReviewList");
 
-  // === LOAD REPORTS (REAL-TIME) ===
+  // === Render Reports Function ===
   function renderReports(snapshot) {
     reportList.innerHTML = "";
+
     if (snapshot.empty) {
       const li = document.createElement("li");
-      li.textContent = "No reports submitted yet.";
+      li.textContent = "No reports found for your barangay.";
       li.style.textAlign = "center";
       li.style.color = "#666";
       reportList.appendChild(li);
@@ -226,6 +227,7 @@
     snapshot.forEach((docSnap) => {
       const r = docSnap.data();
       const li = document.createElement("li");
+      li.className = "report-item";
       li.style.marginBottom = "12px";
       li.style.padding = "10px";
       li.style.border = "1px solid #ccc";
@@ -233,16 +235,26 @@
       li.style.background = "#f9fafb";
 
       const title = document.createElement("strong");
-      title.textContent = `${r.issueType || "Issue"} — ${r.barangay || ""} ${r.location || ""}`;
+      title.textContent = `${r.issueType || "Unknown"} — ${r.barangay || ""} ${r.location || ""}`;
       li.appendChild(title);
 
       const info = document.createElement("div");
-      info.textContent = `Status: ${r.status || "Pending"} | Reported by: ${r.author || "Anonymous"}`;
+      info.textContent = `Status: ${r.status || "Pending"} | Reported by: ${r.author || "Unknown"}`;
       info.style.fontSize = "13px";
       info.style.marginTop = "4px";
       li.appendChild(info);
 
-      // === STATUS BUTTONS ===
+      if (r.imageUrl) {
+        const img = document.createElement("img");
+        img.src = r.imageUrl;
+        img.alt = "Report Image";
+        img.style.maxWidth = "120px";
+        img.style.marginTop = "8px";
+        img.style.borderRadius = "6px";
+        li.appendChild(img);
+      }
+
+      // === Status update buttons ===
       const btnContainer = document.createElement("div");
       btnContainer.style.marginTop = "8px";
       btnContainer.style.display = "flex";
@@ -256,7 +268,6 @@
       btnResolved.textContent = "Mark Resolved";
       btnResolved.className = "status-btn green";
 
-      // Disable if already resolved
       if (r.status === "Resolved") {
         btnInProgress.disabled = true;
         btnResolved.disabled = true;
@@ -264,13 +275,14 @@
         btnResolved.style.opacity = "0.5";
       }
 
-      // Update status in Firestore
       btnInProgress.addEventListener("click", async () => {
         await updateDoc(doc(db, "reports", docSnap.id), { status: "In Progress" });
+        alert(`Report marked as In Progress`);
       });
 
       btnResolved.addEventListener("click", async () => {
         await updateDoc(doc(db, "reports", docSnap.id), { status: "Resolved" });
+        alert(`Report marked as Resolved`);
       });
 
       btnContainer.appendChild(btnInProgress);
@@ -281,15 +293,19 @@
     });
   }
 
-  // === REAL-TIME LISTENER ===
-  onSnapshot(collection(db, "reports"), (snapshot) => {
-    renderReports(snapshot);
-  }, (err) => {
-    console.error("Error loading reports:", err);
-    reportList.innerHTML = `<li style="color:red;text-align:center;">Error loading reports</li>`;
-  });
-</script>
+  // === Live Firestore Listener ===
+  const reportsRef = collection(db, "reports");
+  const q = query(reportsRef, where("barangay", "==", currentUser.barangay));
 
+  onSnapshot(
+    q,
+    (snapshot) => renderReports(snapshot),
+    (err) => {
+      console.error("Error loading reports:", err);
+      reportList.innerHTML = "<li style='color:red;text-align:center;'>Error loading reports.</li>";
+    }
+  );
+</script>
 <!-- === Page logic and logout handling === -->
 <script src="official.js"></script>
 </body>
