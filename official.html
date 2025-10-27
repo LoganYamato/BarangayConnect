@@ -5,25 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Exec Field Work — Barangay Santa Cruz</title>
 
+<!-- ===== STYLES (same as before) ===== -->
 <style>
 :root{
-  --blue:#1e5bb8;--blue-600:#174a95;--blue-50:#f3f8ff;--white:#fff;
-  --gray-50:#f9fafb;--gray-200:#e5e7eb;--gray-300:#d1d5db;--gray-500:#6b7280;--gray-700:#374151;
+  --blue:#1e5bb8; --blue-600:#174a95; --blue-50:#f3f8ff; --white:#fff;
+  --gray-50:#f9fafb; --gray-200:#e5e7eb; --gray-300:#d1d5db; --gray-500:#6b7280; --gray-700:#374151;
+  --green:#16a34a; --amber:#d97706;
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif;background:var(--blue-50);color:#0f172a}
-header{position:sticky;top:0;z-index:10;background:linear-gradient(90deg,var(--blue),var(--blue-600));color:#fff;padding:12px 14px;display:flex;gap:10px;align-items:center}
-.logo{width:36px;height:36px;border-radius:10px;background:#fff;color:var(--blue);display:grid;place-items:center;font-weight:800}
+header{position:sticky;top:0;z-index:10;background:linear-gradient(90deg,var(--blue),var(--blue-600));color:var(--white);padding:12px 14px;display:flex;gap:10px;align-items:center}
+.logo{width:36px;height:36px;border-radius:10px;background:var(--white);color:var(--blue);display:grid;place-items:center;font-weight:800}
 .h1{font-weight:800;font-size:16px}
 .sub{font-size:12px;opacity:.9}
 .container{max-width:720px;margin:0 auto;padding:12px}
-.card{background:#fff;border:1px solid var(--gray-200);border-radius:14px;padding:12px}
-.stack{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--white);border:1px solid var(--gray-200);border-radius:14px;padding:12px}
 .row{display:flex;gap:8px;align-items:center}
+.stack{display:flex;flex-direction:column;gap:10px}
 label.small{font-size:12px;color:var(--gray-700)}
 input,textarea,select{width:100%;padding:11px;border:1px solid var(--gray-300);border-radius:10px;background:var(--gray-50)}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;border:0;cursor:pointer;font-weight:700;background:var(--blue);color:#fff}
-.btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--blue)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;border:0;cursor:pointer;font-weight:700;background:var(--blue);color:var(--white)}
+.btn.secondary{background:var(--white);color:var(--blue);border:1px solid var(--blue)}
 .pill{border:1px solid var(--gray-300);background:#fff;padding:4px 8px;border-radius:999px;font-size:11px;color:var(--gray-700)}
 .section h3{margin:0 0 8px 0;color:var(--blue);font-size:14px}
 .status{display:flex;gap:6px;flex-wrap:wrap}
@@ -58,12 +60,24 @@ footer{padding:24px;text-align:center;color:var(--gray-500)}
 <main class="container stack">
   <section class="card stack">
     <div class="section">
-      <h3>Ticket</h3>
-      <div class="row" style="gap:8px;flex-wrap:wrap">
-        <input id="ticketId" placeholder="Enter Ticket ID (or click one below)"/>
-        <button class="btn" id="loadBtn">Open</button>
+      <h3>Tickets (Barangay Santa Cruz)</h3>
+      <div class="row" style="flex-wrap:wrap;gap:10px;">
+        <select id="statusFilter">
+          <option value="All">All Statuses</option>
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Resolved">Resolved</option>
+          <option value="Closed">Closed</option>
+        </select>
+        <button class="btn" id="refreshBtn">Refresh</button>
       </div>
       <div id="ticketsList" class="stack" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section class="card stack" id="ticketDetail" style="display:none;">
+    <div class="section">
+      <h3>Ticket Details</h3>
       <div class="kv" id="kv"></div>
     </div>
 
@@ -86,29 +100,25 @@ footer{padding:24px;text-align:center;color:var(--gray-500)}
         <button class="btn" id="postBtn">Post Update</button>
       </div>
     </div>
-  </section>
 
-  <section class="card stack">
     <div class="section">
       <h3>Map — Fieldwork Pin</h3>
       <div class="row" style="gap:8px;flex-wrap:wrap">
         <button class="btn" id="geoBtn">Use My Location</button>
         <button class="btn secondary" id="clearPinBtn">Clear Pin</button>
       </div>
-      <div id="map" class="map">Loading map…</div>
+      <div id="map" class="map"></div>
       <div class="row" style="justify-content:space-between;margin-top:8px">
         <span class="pill">Lat: <b id="latOut">—</b></span>
         <span class="pill">Lng: <b id="lngOut">—</b></span>
       </div>
-      <button class="btn" id="saveChangesBtn" style="margin-top:10px">💾 Save Changes</button>
     </div>
-  </section>
 
-  <section class="card stack">
     <div class="section">
       <h3>Timeline</h3>
       <div class="timeline" id="timeline"></div>
     </div>
+
     <div class="section">
       <h3>Proof-of-Work Gallery</h3>
       <div class="gallery" id="gallery"></div>
@@ -118,188 +128,178 @@ footer{padding:24px;text-align:center;color:var(--gray-500)}
 
 <footer>Prototype connected to Firestore. © 2025 BarangayConnect</footer>
 
+<!-- ===== Firebase + Firestore Logic ===== -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
-  authDomain: "iss-bc.firebaseapp.com",
-  projectId: "iss-bc",
-  storageBucket: "iss-bc.firebasestorage.app",
-  messagingSenderId: "455122393981",
-  appId: "1:455122393981:web:bdf281da744767c0064a14"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
+    authDomain: "iss-bc.firebaseapp.com",
+    projectId: "iss-bc",
+    storageBucket: "iss-bc.firebasestorage.app",
+    messagingSenderId: "455122393981",
+    appId: "1:455122393981:web:bdf281da744767c0064a14"
+  };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const storage = getStorage(app);
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+  const $ = s=>document.querySelector(s);
+  const fmt = t=>new Date(t).toLocaleString();
+  const STATUSES = ['Pending','In Progress','Resolved','Closed'];
 
-const $ = s => document.querySelector(s);
-const now = () => new Date().toISOString();
-const fmt = t => new Date(t).toLocaleString();
-const STATUSES = ['Pending', 'In Progress', 'Resolved', 'Closed'];
+  let currentDocId = null;
+  let currentData = null;
 
-let currentDocId = null;
-let currentData = null;
+  // === Load filtered reports ===
+  async function loadTicketsList() {
+    const filter = $("#statusFilter").value;
+    const list = $("#ticketsList");
+    list.innerHTML = "<p>Loading reports...</p>";
+    const snap = await getDocs(collection(db,"reports"));
+    list.innerHTML = "";
 
-// Load reports
-async function loadTicketsList(){
-  const list = $("#ticketsList");
-  list.innerHTML = "<p>Loading reports...</p>";
-  const snap = await getDocs(collection(db,"reports"));
-  list.innerHTML = "";
-  snap.forEach(d=>{
-    const r = d.data();
-    const btn = document.createElement("button");
-    btn.className = "btn secondary";
-    btn.textContent = `${r.issueType || 'Issue'} — ${r.location || 'No location'}`;
-    btn.onclick = ()=>openTicket(d.id);
-    list.appendChild(btn);
-  });
-}
+    snap.forEach(d=>{
+      const r=d.data();
+      if(r.barangay!=="Santa Cruz") return;
+      if(filter!=="All" && r.status!==filter) return;
 
-// Open a ticket
-async function openTicket(id){
-  currentDocId = id;
-  const refDoc = doc(db,"reports",id);
-  const snap = await getDoc(refDoc);
-  if(!snap.exists()){ alert("Ticket not found"); return; }
-  currentData = snap.data();
-  $("#ticketId").value = id;
-  renderAll();
-}
-
-// Render
-function renderAll(){
-  $("#kv").innerHTML = `
-    <div>Issue</div><div>${currentData.issueType || '-'}</div>
-    <div>Barangay</div><div>${currentData.barangay || '-'}</div>
-    <div>Street</div><div>${currentData.location || '-'}</div>
-    <div>Status</div><div id="kvStatus">${currentData.status || '-'}</div>
-    <div>Submitted</div><div>${fmt(currentData.timestamp || now())}</div>
-  `;
-  $("#statusNow").textContent = currentData.status || '—';
-  $("#lastTs").textContent = fmt(currentData.timestamp || now());
-  buildStatusBar();
-  renderTimeline();
-  renderGallery();
-}
-
-function buildStatusBar(){
-  const bar = $("#statusBar"); bar.innerHTML = "";
-  STATUSES.forEach(s=>{
-    const b = document.createElement("button");
-    b.className = "s" + (currentData.status===s?" active":"");
-    b.textContent = s;
-    b.onclick = ()=>setStatus(s);
-    bar.appendChild(b);
-  });
-}
-
-function setStatus(s){
-  currentData.status = s;
-  $("#statusNow").textContent = s;
-  buildStatusBar();
-}
-
-// Save Changes (status + location)
-$("#saveChangesBtn").onclick = async ()=>{
-  if(!currentDocId) return alert("Open a ticket first.");
-  const lat = $("#latOut").textContent==="—"?null:parseFloat($("#latOut").textContent);
-  const lng = $("#lngOut").textContent==="—"?null:parseFloat($("#lngOut").textContent);
-  await updateDoc(doc(db,"reports",currentDocId),{
-    status: currentData.status,
-    lat: lat || null,
-    lng: lng || null,
-    lastUpdate: now()
-  });
-  alert("✅ Changes saved successfully!");
-};
-
-// Post Update (text/media)
-$("#postBtn").onclick = async ()=>{
-  if(!currentDocId){ alert("Open a ticket first"); return; }
-  const text = $("#updateText").value.trim();
-  const files = Array.from($("#media").files || []);
-  let fileUrls = [];
-
-  for(const f of files){
-    const refFile = ref(storage, `proofs/${currentDocId}_${Date.now()}_${f.name}`);
-    await uploadBytes(refFile, f);
-    const url = await getDownloadURL(refFile);
-    fileUrls.push(url);
-  }
-
-  await updateDoc(doc(db,"reports",currentDocId),{
-    lastUpdate: now(),
-    lastMessage: text ? `Update: ${text}` : "",
-    proofUrls: (currentData.proofUrls || []).concat(fileUrls)
-  });
-
-  currentData.lastMessage = text ? `Update: ${text}` : "";
-  currentData.proofUrls = (currentData.proofUrls || []).concat(fileUrls);
-  $("#updateText").value = "";
-  $("#media").value = "";
-  renderTimeline();
-  renderGallery();
-};
-
-// Timeline + Gallery
-function renderTimeline(){
-  const t = $("#timeline");
-  t.innerHTML = "";
-  if(currentData.lastMessage){
-    const d = document.createElement("div");
-    d.className = "tick";
-    d.innerHTML = `<div class="dot"></div><div class="content"><div class="meta">${fmt(currentData.lastUpdate||now())}</div><div>${currentData.lastMessage}</div></div>`;
-    t.appendChild(d);
-  }
-}
-
-function renderGallery(){
-  const g = $("#gallery");
-  g.innerHTML = "";
-  (currentData.proofUrls || []).forEach(u=>{
-    const div = document.createElement("div");
-    div.className = "thumb";
-    const img = new Image();
-    img.src = u;
-    div.appendChild(img);
-    g.appendChild(div);
-  });
-}
-
-// Map
-let lmap=null,lmarker=null;
-function initMap(){
-  if(lmap){lmap.remove();}
-  lmap=L.map("map").setView([14.5668,121.0270],17);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20}).addTo(lmap);
-  lmap.on("click",e=>setPin(e.latlng.lat,e.latlng.lng,true));
-}
-function setPin(lat,lng,save){
-  if(!lmarker){
-    lmarker=L.marker([lat,lng],{draggable:true}).addTo(lmap);
-    lmarker.on("dragend",()=>{
-      const p=lmarker.getLatLng(); setPin(p.lat,p.lng,true);
+      const btn=document.createElement("button");
+      btn.className="btn secondary";
+      btn.textContent=`${r.issueType} — ${r.location} (${r.status})`;
+      btn.onclick=()=>openTicket(d.id);
+      list.appendChild(btn);
     });
-  } else lmarker.setLatLng([lat,lng]);
-  $("#latOut").textContent=lat.toFixed(5);
-  $("#lngOut").textContent=lng.toFixed(5);
-}
-$("#geoBtn").onclick=()=>{
-  if(!navigator.geolocation) return alert("No geolocation");
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const {latitude,longitude}=pos.coords;
-    lmap.setView([latitude,longitude],18);
-    setPin(latitude,longitude,true);
-  });
-};
-$("#clearPinBtn").onclick=()=>{ if(lmarker){ lmap.removeLayer(lmarker); lmarker=null; } $("#latOut").textContent="—"; $("#lngOut").textContent="—"; };
 
-window.addEventListener("load",()=>{ initMap(); loadTicketsList(); });
+    if(!list.innerHTML) list.innerHTML="<p>No reports match this filter.</p>";
+  }
+
+  $("#statusFilter").onchange=loadTicketsList;
+  $("#refreshBtn").onclick=loadTicketsList;
+
+  async function openTicket(id){
+    currentDocId=id;
+    const ref=doc(db,"reports",id);
+    const snap=await getDoc(ref);
+    if(!snap.exists()){ alert("Ticket not found"); return; }
+    currentData=snap.data();
+    $("#ticketDetail").style.display="flex";
+    renderAll();
+  }
+
+  function renderAll(){
+    $("#kv").innerHTML=`
+      <div>Issue</div><div>${currentData.issueType}</div>
+      <div>Location</div><div>${currentData.location}</div>
+      <div>Status</div><div>${currentData.status}</div>
+      <div>Submitted</div><div>${fmt(currentData.timestamp)}</div>
+    `;
+    $("#statusNow").textContent=currentData.status;
+    $("#lastTs").textContent=fmt(currentData.timestamp);
+    buildStatusBar();
+    renderTimeline();
+    renderGallery();
+  }
+
+  function buildStatusBar(){
+    const bar=$("#statusBar"); bar.innerHTML="";
+    STATUSES.forEach(s=>{
+      const b=document.createElement("button");
+      b.className="s"+(currentData.status===s?" active":"");
+      b.textContent=s;
+      b.onclick=()=>setStatus(s);
+      bar.appendChild(b);
+    });
+  }
+
+  async function setStatus(s){
+    if(!currentDocId) return;
+    await updateDoc(doc(db,"reports",currentDocId),{status:s});
+    currentData.status=s;
+    $("#statusNow").textContent=s;
+    buildStatusBar();
+  }
+
+  $("#postBtn").onclick=async()=>{
+    if(!currentDocId){ alert("Open a ticket first"); return; }
+    const text=$("#updateText").value.trim();
+    const files=Array.from($("#media").files||[]);
+    let fileUrls=[];
+
+    for(const f of files){
+      const refFile=ref(storage,`proofs/${currentDocId}_${Date.now()}_${f.name}`);
+      await uploadBytes(refFile,f);
+      const url=await getDownloadURL(refFile);
+      fileUrls.push(url);
+    }
+
+    await updateDoc(doc(db,"reports",currentDocId),{
+      lastUpdate: new Date().toISOString(),
+      lastMessage: text,
+      proofUrls: (currentData.proofUrls||[]).concat(fileUrls)
+    });
+
+    currentData.lastMessage=text;
+    currentData.proofUrls=(currentData.proofUrls||[]).concat(fileUrls);
+    $("#updateText").value="";
+    $("#media").value="";
+    renderTimeline();
+    renderGallery();
+  };
+
+  function renderTimeline(){
+    const t=$("#timeline"); t.innerHTML="";
+    if(currentData.lastMessage){
+      const d=document.createElement("div");
+      d.className="tick";
+      d.innerHTML=`<div class="dot"></div><div class="content"><div class="meta">${fmt(currentData.lastUpdate)}</div><div>${currentData.lastMessage}</div></div>`;
+      t.appendChild(d);
+    }
+  }
+
+  function renderGallery(){
+    const g=$("#gallery"); g.innerHTML="";
+    (currentData.proofUrls||[]).forEach(u=>{
+      const div=document.createElement("div"); div.className="thumb";
+      const img=new Image(); img.src=u;
+      div.appendChild(img); g.appendChild(div);
+    });
+  }
+
+  // === Map ===
+  let lmap=null,lmarker=null;
+  function initMap(){
+    lmap=L.map("map").setView([14.5668,121.0270],17);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20}).addTo(lmap);
+    lmap.on("click",e=>setPin(e.latlng.lat,e.latlng.lng,true));
+  }
+
+  function setPin(lat,lng,save){
+    if(!lmarker){
+      lmarker=L.marker([lat,lng],{draggable:true}).addTo(lmap);
+      lmarker.on("dragend",()=>{
+        const p=lmarker.getLatLng(); setPin(p.lat,p.lng,true);
+      });
+    } else { lmarker.setLatLng([lat,lng]); }
+    $("#latOut").textContent=lat.toFixed(5);
+    $("#lngOut").textContent=lng.toFixed(5);
+    if(save && currentDocId){
+      updateDoc(doc(db,"reports",currentDocId),{lat,lng});
+    }
+  }
+
+  $("#geoBtn").onclick=()=>{
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const {latitude,longitude}=pos.coords;
+      lmap.setView([latitude,longitude],18);
+      setPin(latitude,longitude,true);
+    });
+  };
+  $("#clearPinBtn").onclick=()=>{ if(lmarker){ lmap.removeLayer(lmarker); lmarker=null; } };
+
+  window.addEventListener("load",()=>{ initMap(); loadTicketsList(); });
 </script>
 </body>
 </html>
