@@ -29,13 +29,24 @@
 
     /* Left column (list + filters) */
     .panel{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
-    .filter-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+    .filter-row{display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap; 
+}
+.filter-row button {
+  flex-shrink: 0;
+}
     .filter-row select{padding:8px;border-radius:8px;border:1px solid #e6eefc}
     #reportList{list-style:none;margin:0;padding:0;max-height:72vh;overflow:auto}
     #reportList li{padding:12px;border-radius:8px;margin-bottom:8px;border:1px solid #eef3ff;cursor:pointer}
     #reportList li:hover{background:#f8fbff}
     #reportList li.selected{background:#e6f6ee;border-left:4px solid var(--blue);font-weight:600}
-
+#refreshBtn {
+  padding: 8px 10px;
+  font-size: 14px;
+}
     /* detail column */
     .detail-grid{display:flex;flex-direction:column;gap:12px}
     .kv{display:grid;grid-template-columns:140px 1fr;gap:8px;padding:10px 0}
