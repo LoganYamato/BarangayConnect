@@ -210,35 +210,102 @@
   </script>
   <script src="script.js"></script>
   <script type="module">
-  import { db } from "./firebaseConfig.js";
-  import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
+  // === Firebase Init ===
+  const firebaseConfig = {
+    apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
+    authDomain: "iss-bc.firebaseapp.com",
+    projectId: "iss-bc",
+    storageBucket: "iss-bc.firebasestorage.app",
+    messagingSenderId: "455122393981",
+    appId: "1:455122393981:web:bdf281da744767c0064a14",
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   const reportForm = document.getElementById("reportForm");
-  const message = document.getElementById("reportMessage");
+  const reportsContainer = document.getElementById("reportsContainer");
 
+  // === Firestore Submission ===
   reportForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const issue = document.getElementById("issue").value;
-    const location = document.getElementById("location").value;
-    const description = document.getElementById("description").value;
+    const brgy = document.getElementById("brgy").value;
+    const street = document.getElementById("street").value;
+    const description = document.getElementById("description").value.trim();
+    const fileInput = document.getElementById("imageUpload");
 
     try {
+      let imageUrl = null;
+      const file = fileInput.files[0];
+      if (file) {
+        const fileRef = ref(storage, `reports/${Date.now()}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        imageUrl = await getDownloadURL(fileRef);
+      }
+
       await addDoc(collection(db, "reports"), {
-        issue,
-        location,
-        description,
-        timestamp: new Date(),
-        status: "Pending"
+        issueType: issue,
+        barangay: brgy,
+        location: street,
+        desc: description,
+        author: currentUser?.name || "Anonymous",
+        status: "Pending",
+        timestamp: new Date().toISOString(),
+        imageUrl
       });
 
-      message.textContent = " Report submitted successfully!";
+      alert("Report submitted successfully!");
       reportForm.reset();
+      document.getElementById("street-group").style.display = "none";
+      document.getElementById("details-group").style.display = "none";
+
+      loadReports(); // reload the reports list
     } catch (err) {
-      console.error("Error adding document: ", err);
-      message.textContent = " Error submitting report. Try again.";
+      console.error("Error submitting report:", err);
+      alert("Error submitting report. Try again.");
     }
   });
+
+  // === Firestore Retrieval (Your Submitted Reports) ===
+  async function loadReports() {
+    reportsContainer.innerHTML = "<p>Loading reports...</p>";
+
+    const q = query(
+      collection(db, "reports"),
+      where("author", "==", currentUser?.name || "Anonymous"),
+      orderBy("timestamp", "desc")
+    );
+
+    const snap = await getDocs(q);
+    reportsContainer.innerHTML = "";
+
+    if (snap.empty) {
+      reportsContainer.innerHTML = "<p>No reports submitted yet.</p>";
+      return;
+    }
+
+    snap.forEach((doc) => {
+      const r = doc.data();
+      const div = document.createElement("div");
+      div.classList.add("report-item");
+      div.innerHTML = `
+        <strong>${r.issueType}</strong> — ${r.barangay}, ${r.location}<br>
+        <em>${r.desc}</em><br>
+        <small>Status: ${r.status}</small><br>
+        ${r.imageUrl ? `<img src="${r.imageUrl}" alt="Proof" style="max-width:120px;margin-top:4px;border-radius:8px;">` : ""}
+      `;
+      reportsContainer.appendChild(div);
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", loadReports);
 </script>
 
 </body>
