@@ -201,7 +201,7 @@
     alert("Unauthorized access. Redirecting...");
     window.location.href = "index.html";
   }
-
+  document.getElementById("officialBarangay").textContent = currentUser.barangay;
   // === Logout ===
   document.getElementById("logoutBtn").addEventListener("click", () => {
     localStorage.removeItem("currentUser");
@@ -209,7 +209,7 @@
   });
 
   // === References ===
-  const reportList = document.getElementById("reportReviewList");
+  const reportList = document.getElementById("reportList");
 
   // === Render Reports Function ===
   function renderReports(snapshot) {
