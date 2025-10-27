@@ -192,7 +192,7 @@
     messagingSenderId: "455122393981",
     appId: "1:455122393981:web:bdf281da744767c0064a14",
   };
-  const app = initializeApp(firebaseConfig);
+  const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
   const db = getFirestore(app);
 
   // === AUTH CHECK ===
@@ -281,5 +281,6 @@
   // === INITIAL LOAD ===
   document.addEventListener("DOMContentLoaded", loadReports);
 </script>
+  <script src = "official.js> </script>
 </body>
 </html>
