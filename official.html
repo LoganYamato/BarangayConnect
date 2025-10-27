@@ -1,139 +1,163 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Exec Field Work — Barangay Santa Cruz</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Official Dashboard — BarangayConnect</title>
 
-<!-- ===== STYLES (same as before) ===== -->
-<style>
-:root{
-  --blue:#1e5bb8; --blue-600:#174a95; --blue-50:#f3f8ff; --white:#fff;
-  --gray-50:#f9fafb; --gray-200:#e5e7eb; --gray-300:#d1d5db; --gray-500:#6b7280; --gray-700:#374151;
-  --green:#16a34a; --amber:#d97706;
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif;background:var(--blue-50);color:#0f172a}
-header{position:sticky;top:0;z-index:10;background:linear-gradient(90deg,var(--blue),var(--blue-600));color:var(--white);padding:12px 14px;display:flex;gap:10px;align-items:center}
-.logo{width:36px;height:36px;border-radius:10px;background:var(--white);color:var(--blue);display:grid;place-items:center;font-weight:800}
-.h1{font-weight:800;font-size:16px}
-.sub{font-size:12px;opacity:.9}
-.container{max-width:720px;margin:0 auto;padding:12px}
-.card{background:var(--white);border:1px solid var(--gray-200);border-radius:14px;padding:12px}
-.row{display:flex;gap:8px;align-items:center}
-.stack{display:flex;flex-direction:column;gap:10px}
-label.small{font-size:12px;color:var(--gray-700)}
-input,textarea,select{width:100%;padding:11px;border:1px solid var(--gray-300);border-radius:10px;background:var(--gray-50)}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;border:0;cursor:pointer;font-weight:700;background:var(--blue);color:var(--white)}
-.btn.secondary{background:var(--white);color:var(--blue);border:1px solid var(--blue)}
-.pill{border:1px solid var(--gray-300);background:#fff;padding:4px 8px;border-radius:999px;font-size:11px;color:var(--gray-700)}
-.section h3{margin:0 0 8px 0;color:var(--blue);font-size:14px}
-.status{display:flex;gap:6px;flex-wrap:wrap}
-.status .s{padding:8px 10px;border-radius:10px;border:1px solid var(--gray-300);background:#fff;font-size:12px;cursor:pointer}
-.status .s.active{border-color:var(--blue);box-shadow:0 0 0 2px rgba(30,91,184,.15)}
-.kv{display:grid;grid-template-columns:110px 1fr;gap:6px;font-size:13px}
-.timeline{display:flex;flex-direction:column-reverse;gap:8px;max-height:240px;overflow:auto;border:1px solid var(--gray-200);border-radius:12px;background:#fff;padding:10px}
-.tick{display:flex;gap:8px}
-.dot{width:10px;height:10px;border-radius:50%;background:var(--blue);margin-top:5px}
-.content{background:var(--blue-50);border:1px solid var(--gray-200);padding:8px;border-radius:10px;flex:1}
-.meta{font-size:12px;color:var(--gray-500)}
-.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
-.thumb{height:90px;border:1px solid var(--gray-200);border-radius:10px;overflow:hidden;display:grid;place-items:center;background:var(--gray-50)}
-.thumb img,.thumb video{width:100%;height:100%;object-fit:cover}
-.map{height:260px;border:1px solid var(--gray-200);border-radius:12px;background:#e6eefc;overflow:hidden}
-footer{padding:24px;text-align:center;color:var(--gray-500)}
-</style>
+  <!-- Basic styles + responsive two-column layout -->
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root{
+      --blue:#1e5bb8; --green:#16a34a; --muted:#f4f6fb; --card:#ffffff;
+      --text:#0f172a;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--muted);color:var(--text)}
+    header{background:linear-gradient(90deg,var(--blue),#174a95);color:white;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    header .brand{display:flex;gap:12px;align-items:center}
+    header h1{font-size:18px;margin:0}
+    #logoutBtn{background:#dc3545;border:0;color:white;padding:8px 12px;border-radius:8px;cursor:pointer}
+    main{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px;max-width:1200px;margin:18px auto}
+    /* make responsive single-column on narrow screens */
+    @media (max-width:900px){ main{grid-template-columns:1fr; padding:12px; } }
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    /* Left column (list + filters) */
+    .panel{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
+    .filter-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+    .filter-row select{padding:8px;border-radius:8px;border:1px solid #e6eefc}
+    #reportList{list-style:none;margin:0;padding:0;max-height:72vh;overflow:auto}
+    #reportList li{padding:12px;border-radius:8px;margin-bottom:8px;border:1px solid #eef3ff;cursor:pointer}
+    #reportList li:hover{background:#f8fbff}
+    #reportList li.selected{background:#e6f6ee;border-left:4px solid var(--blue);font-weight:600}
+
+    /* detail column */
+    .detail-grid{display:flex;flex-direction:column;gap:12px}
+    .kv{display:grid;grid-template-columns:140px 1fr;gap:8px;padding:10px 0}
+    .pill{padding:6px 8px;border-radius:999px;border:1px solid #e6eefc;background:#fff;display:inline-block}
+    textarea{width:100%;min-height:80px;padding:10px;border-radius:8px;border:1px solid #e6eefc}
+    .btn{background:var(--blue);color:white;border:0;padding:10px 12px;border-radius:8px;cursor:pointer}
+    .btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--blue)}
+    .status-buttons{display:flex;gap:8px;flex-wrap:wrap}
+    #map{height:320px;border-radius:10px;border:1px solid #e6eefc}
+    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
+    .thumb{height:90px;border-radius:8px;overflow:hidden;border:1px solid #eef3ff;display:grid;place-items:center;background:#fafcff}
+    .thumb img, .thumb video{width:100%;height:100%;object-fit:cover}
+    .small{font-size:13px;color:#516179}
+    .muted{color:#6b7280;font-size:13px}
+  </style>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
-
 <body>
+
 <header>
-  <div class="logo">BC</div>
-  <div class="stack" style="gap:2px">
-    <div class="h1">Exec Field Work — Updates & Proof</div>
-    <div class="sub">Barangay Santa Cruz, Makati City • Mobile-first</div>
+  <div class="brand">
+    <div style="width:44px;height:44px;border-radius:8px;background:white;color:var(--blue);display:grid;place-items:center;font-weight:800"><img src="logo.png" alt="Barangay Logo" class="logo"> </div>
+    <div>
+      <h1>BarangayConnect — Official Dashboard</h1>
+      <div class="muted" id="subHeader">Barangay — <span id="officialBarangay">—</span></div>
+    </div>
+  </div>
+
+  <div>
+    <button id="logoutBtn">Logout</button>
   </div>
 </header>
 
-<main class="container stack">
-  <section class="card stack">
-    <div class="section">
-      <h3>Tickets (Barangay Santa Cruz)</h3>
-      <div class="row" style="flex-wrap:wrap;gap:10px;">
-        <select id="statusFilter">
-          <option value="All">All Statuses</option>
-          <option value="Pending">Pending</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Resolved">Resolved</option>
-          <option value="Closed">Closed</option>
-        </select>
-        <button class="btn" id="refreshBtn">Refresh</button>
-      </div>
-      <div id="ticketsList" class="stack" style="margin-top:10px"></div>
-    </div>
-  </section>
-
-  <section class="card stack" id="ticketDetail" style="display:none;">
-    <div class="section">
-      <h3>Ticket Details</h3>
-      <div class="kv" id="kv"></div>
+<main>
+  <!-- LEFT: List + Filters -->
+  <aside class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3 style="margin:0">Reports</h3>
+      <div class="muted small">Local / Firestore</div>
     </div>
 
-    <div class="section">
-      <h3>Status</h3>
-      <div class="status" id="statusBar"></div>
-      <div class="row" style="justify-content:space-between">
-        <span class="pill">Current: <b id="statusNow">—</b></span>
-        <span class="pill">Last updated: <b id="lastTs">—</b></span>
-      </div>
+    <div class="filter-row">
+      <select id="filterStatus">
+        <option value="All">All statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Resolved">Resolved</option>
+      </select>
+      <input id="searchInput" placeholder="Search issue / street" style="flex:1;padding:8px;border-radius:8px;border:1px solid #e6eefc" />
+      <button id="refreshBtn" class="btn secondary">Refresh</button>
     </div>
 
-    <div class="section">
-      <h3>Post Field Update</h3>
-      <textarea id="updateText" rows="3" placeholder="Write a short update..."></textarea>
-      <div class="row" style="justify-content:space-between;flex-wrap:wrap">
-        <label class="small">Attach media
-          <input id="media" type="file" accept="image/*,video/*" multiple>
-        </label>
-        <button class="btn" id="postBtn">Post Update</button>
-      </div>
-    </div>
+    <ul id="reportList" aria-live="polite"></ul>
+  </aside>
 
-    <div class="section">
-      <h3>Map — Fieldwork Pin</h3>
-      <div class="row" style="gap:8px;flex-wrap:wrap">
-        <button class="btn" id="geoBtn">Use My Location</button>
-        <button class="btn secondary" id="clearPinBtn">Clear Pin</button>
+  <!-- RIGHT: Detail panel -->
+  <section class="panel detail-grid">
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <h2 id="detailTitle" style="margin:0">Select a report</h2>
+          <div class="muted small" id="detailSub">Click a report from the list to view details.</div>
+        </div>
+        <div>
+          <span class="pill" id="detailStatus">—</span>
+        </div>
       </div>
-      <div id="map" class="map"></div>
-      <div class="row" style="justify-content:space-between;margin-top:8px">
-        <span class="pill">Lat: <b id="latOut">—</b></span>
-        <span class="pill">Lng: <b id="lngOut">—</b></span>
+
+      <div class="kv" style="margin-top:12px">
+        <div class="small">Issue Type</div><div id="detailIssue">—</div>
+        <div class="small">Location</div><div id="detailLocation">—</div>
+        <div class="small">Reported By</div><div id="detailAuthor">—</div>
+        <div class="small">Submitted</div><div id="detailTimestamp">—</div>
+        <div class="small">Description</div><div id="detailDesc">—</div>
       </div>
     </div>
 
-    <div class="section">
-      <h3>Timeline</h3>
-      <div class="timeline" id="timeline"></div>
+    <!-- Status controls -->
+    <div>
+      <h4 style="margin:6px 0">Change status</h4>
+      <div class="status-buttons" id="statusBar"></div>
     </div>
 
-    <div class="section">
-      <h3>Proof-of-Work Gallery</h3>
-      <div class="gallery" id="gallery"></div>
+    <!-- Post update -->
+    <div>
+      <h4 style="margin:6px 0">Post update</h4>
+      <textarea id="updateText" placeholder="Write a short update for the resident..."></textarea>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+        <input id="updateMedia" type="file" accept="image/*,video/*" multiple />
+        <button id="postUpdateBtn" class="btn">Post Update</button>
+      </div>
+    </div>
+
+    <!-- Timeline + gallery + map -->
+    <div style="display:grid;grid-template-columns:1fr 240px;gap:12px">
+      <div>
+        <h4 style="margin:6px 0">Timeline</h4>
+        <div id="timeline" style="max-height:150px;overflow:auto;padding:8px;border-radius:8px;background:#fbfdff;border:1px solid #eef3ff"></div>
+        <h4 style="margin:8px 0 6px 0">Proof Media</h4>
+        <div class="gallery" id="proofGallery"></div>
+      </div>
+      <div>
+        <h4 style="margin:6px 0">Map</h4>
+        <div id="map"></div>
+        <div style="display:flex;gap:8px;margin-top:8px;justify-content:space-between">
+          <span class="pill small">Lat: <b id="latOut">—</b></span>
+          <span class="pill small">Lng: <b id="lngOut">—</b></span>
+        </div>
+      </div>
     </div>
   </section>
 </main>
 
-<footer>Prototype connected to Firestore. © 2025 BarangayConnect</footer>
-
-<!-- ===== Firebase + Firestore Logic ===== -->
+<!-- Firebase + App logic (module) -->
 <script type="module">
+  // --- Firebase imports ---
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+  import {
+    getFirestore, collection, query, where, getDocs,
+    doc, getDoc, updateDoc, arrayUnion, serverTimestamp, onSnapshot
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
+  // --- Your firebase config (from earlier) ---
   const firebaseConfig = {
     apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
     authDomain: "iss-bc.firebaseapp.com",
@@ -146,160 +170,363 @@ footer{padding:24px;text-align:center;color:var(--gray-500)}
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const storage = getStorage(app);
-  const $ = s=>document.querySelector(s);
-  const fmt = t=>new Date(t).toLocaleString();
-  const STATUSES = ['Pending','In Progress','Resolved','Closed'];
 
-  let currentDocId = null;
-  let currentData = null;
+  // --- Elements & UI state ---
+  const reportListEl = document.getElementById("reportList");
+  const filterStatusEl = document.getElementById("filterStatus");
+  const searchInputEl = document.getElementById("searchInput");
+  const refreshBtn = document.getElementById("refreshBtn");
 
-  // === Load filtered reports ===
-  async function loadTicketsList() {
-    const filter = $("#statusFilter").value;
-    const list = $("#ticketsList");
-    list.innerHTML = "<p>Loading reports...</p>";
-    const snap = await getDocs(collection(db,"reports"));
-    list.innerHTML = "";
+  const detailTitle = document.getElementById("detailTitle");
+  const detailSub = document.getElementById("detailSub");
+  const detailIssue = document.getElementById("detailIssue");
+  const detailLocation = document.getElementById("detailLocation");
+  const detailAuthor = document.getElementById("detailAuthor");
+  const detailTimestamp = document.getElementById("detailTimestamp");
+  const detailDesc = document.getElementById("detailDesc");
+  const detailStatus = document.getElementById("detailStatus");
 
-    snap.forEach(d=>{
-      const r=d.data();
-      if(r.barangay!=="Santa Cruz") return;
-      if(filter!=="All" && r.status!==filter) return;
+  const statusBar = document.getElementById("statusBar");
+  const updateText = document.getElementById("updateText");
+  const updateMedia = document.getElementById("updateMedia");
+  const postUpdateBtn = document.getElementById("postUpdateBtn");
+  const timelineEl = document.getElementById("timeline");
+  const proofGallery = document.getElementById("proofGallery");
 
-      const btn=document.createElement("button");
-      btn.className="btn secondary";
-      btn.textContent=`${r.issueType} — ${r.location} (${r.status})`;
-      btn.onclick=()=>openTicket(d.id);
-      list.appendChild(btn);
-    });
+  const latOut = document.getElementById("latOut");
+  const lngOut = document.getElementById("lngOut");
+  const officialBarangayEl = document.getElementById("officialBarangay");
 
-    if(!list.innerHTML) list.innerHTML="<p>No reports match this filter.</p>";
+  // --- Map setup (Leaflet) ---
+  let map = L.map("map", { zoomControl: true }).setView([14.5585, 121.0271], 15);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 20 }).addTo(map);
+  let currentMarker = null;
+
+  // --- Authentication + access control (client-side prototype) ---
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  if (!currentUser || currentUser.role !== "official") {
+    alert("Unauthorized. Please login as an official.");
+    window.location.href = "index.html";
   }
+  // show barangay in header
+  officialBarangayEl.textContent = currentUser.barangay || "Santa Cruz";
 
-  $("#statusFilter").onchange=loadTicketsList;
-  $("#refreshBtn").onclick=loadTicketsList;
+  // logout handler
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    localStorage.removeItem("currentUser");
+    window.location.href = "index.html";
+  });
 
-  async function openTicket(id){
-    currentDocId=id;
-    const ref=doc(db,"reports",id);
-    const snap=await getDoc(ref);
-    if(!snap.exists()){ alert("Ticket not found"); return; }
-    currentData=snap.data();
-    $("#ticketDetail").style.display="flex";
-    renderAll();
-  }
+  // --- Local state for loaded reports ---
+  let allReports = []; // array of { id, data... }
+  let selectedReport = null;
 
-  function renderAll(){
-    $("#kv").innerHTML=`
-      <div>Issue</div><div>${currentData.issueType}</div>
-      <div>Location</div><div>${currentData.location}</div>
-      <div>Status</div><div>${currentData.status}</div>
-      <div>Submitted</div><div>${fmt(currentData.timestamp)}</div>
-    `;
-    $("#statusNow").textContent=currentData.status;
-    $("#lastTs").textContent=fmt(currentData.timestamp);
-    buildStatusBar();
-    renderTimeline();
-    renderGallery();
-  }
-
-  function buildStatusBar(){
-    const bar=$("#statusBar"); bar.innerHTML="";
-    STATUSES.forEach(s=>{
-      const b=document.createElement("button");
-      b.className="s"+(currentData.status===s?" active":"");
-      b.textContent=s;
-      b.onclick=()=>setStatus(s);
-      bar.appendChild(b);
-    });
-  }
-
-  async function setStatus(s){
-    if(!currentDocId) return;
-    await updateDoc(doc(db,"reports",currentDocId),{status:s});
-    currentData.status=s;
-    $("#statusNow").textContent=s;
-    buildStatusBar();
-  }
-
-  $("#postBtn").onclick=async()=>{
-    if(!currentDocId){ alert("Open a ticket first"); return; }
-    const text=$("#updateText").value.trim();
-    const files=Array.from($("#media").files||[]);
-    let fileUrls=[];
-
-    for(const f of files){
-      const refFile=ref(storage,`proofs/${currentDocId}_${Date.now()}_${f.name}`);
-      await uploadBytes(refFile,f);
-      const url=await getDownloadURL(refFile);
-      fileUrls.push(url);
+  // Helpful utility
+  const fmt = ts => {
+    try {
+      return new Date(ts.seconds ? ts.seconds * 1000 : ts).toLocaleString();
+    } catch (e) {
+      return new Date().toLocaleString();
     }
-
-    await updateDoc(doc(db,"reports",currentDocId),{
-      lastUpdate: new Date().toISOString(),
-      lastMessage: text,
-      proofUrls: (currentData.proofUrls||[]).concat(fileUrls)
-    });
-
-    currentData.lastMessage=text;
-    currentData.proofUrls=(currentData.proofUrls||[]).concat(fileUrls);
-    $("#updateText").value="";
-    $("#media").value="";
-    renderTimeline();
-    renderGallery();
   };
 
-  function renderTimeline(){
-    const t=$("#timeline"); t.innerHTML="";
-    if(currentData.lastMessage){
-      const d=document.createElement("div");
-      d.className="tick";
-      d.innerHTML=`<div class="dot"></div><div class="content"><div class="meta">${fmt(currentData.lastUpdate)}</div><div>${currentData.lastMessage}</div></div>`;
-      t.appendChild(d);
-    }
-  }
+  // Load reports for this official's barangay from Firestore
+  async function loadReports() {
+    reportListEl.innerHTML = "<li class='small muted'>Loading reports…</li>";
+    allReports = [];
 
-  function renderGallery(){
-    const g=$("#gallery"); g.innerHTML="";
-    (currentData.proofUrls||[]).forEach(u=>{
-      const div=document.createElement("div"); div.className="thumb";
-      const img=new Image(); img.src=u;
-      div.appendChild(img); g.appendChild(div);
-    });
-  }
+    try {
+      const q = query(
+        collection(db, "reports"),
+        where("barangay", "==", (currentUser.barangay || "Santa Cruz"))
+      );
 
-  // === Map ===
-  let lmap=null,lmarker=null;
-  function initMap(){
-    lmap=L.map("map").setView([14.5668,121.0270],17);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20}).addTo(lmap);
-    lmap.on("click",e=>setPin(e.latlng.lat,e.latlng.lng,true));
-  }
-
-  function setPin(lat,lng,save){
-    if(!lmarker){
-      lmarker=L.marker([lat,lng],{draggable:true}).addTo(lmap);
-      lmarker.on("dragend",()=>{
-        const p=lmarker.getLatLng(); setPin(p.lat,p.lng,true);
+      const snaps = await getDocs(q);
+      snaps.forEach(snap => {
+        allReports.push({ id: snap.id, ...snap.data() });
       });
-    } else { lmarker.setLatLng([lat,lng]); }
-    $("#latOut").textContent=lat.toFixed(5);
-    $("#lngOut").textContent=lng.toFixed(5);
-    if(save && currentDocId){
-      updateDoc(doc(db,"reports",currentDocId),{lat,lng});
+
+      // initial render
+      renderReportList();
+    } catch (err) {
+      console.error("loadReports error", err);
+      reportListEl.innerHTML = `<li class="muted small">Failed to load reports. Check console.</li>`;
     }
   }
 
-  $("#geoBtn").onclick=()=>{
-    navigator.geolocation.getCurrentPosition(pos=>{
-      const {latitude,longitude}=pos.coords;
-      lmap.setView([latitude,longitude],18);
-      setPin(latitude,longitude,true);
-    });
-  };
-  $("#clearPinBtn").onclick=()=>{ if(lmarker){ lmap.removeLayer(lmarker); lmarker=null; } };
+  // Render report list with filter + search
+  function renderReportList() {
+    const statusFilter = filterStatusEl.value;
+    const q = (searchInputEl.value || "").trim().toLowerCase();
 
-  window.addEventListener("load",()=>{ initMap(); loadTicketsList(); });
+    const filtered = allReports.filter(r => {
+      const statusMatch = (statusFilter === "All") || (r.status === statusFilter);
+      const text = `${r.issueType||r.issue||""} ${r.location||""} ${r.author||r.name||""}`.toLowerCase();
+      const searchMatch = !q || text.includes(q);
+      return statusMatch && searchMatch;
+    });
+
+    if (filtered.length === 0) {
+      reportListEl.innerHTML = `<li class="muted small">No reports found.</li>`;
+      return;
+    }
+
+    reportListEl.innerHTML = "";
+    filtered.forEach((r, idx) => {
+      const li = document.createElement("li");
+      li.tabIndex = 0;
+      li.dataset.id = r.id;
+      li.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+                        <div><strong>${r.issueType||r.issue||"Issue"}</strong><div class="muted small">${r.location||"Unknown"}</div></div>
+                        <div class="muted small">${r.status || "Pending"}</div>
+                      </div>`;
+      li.addEventListener("click", () => selectReport(r.id));
+      // keyboard accessibility
+      li.addEventListener("keypress", e => { if (e.key === "Enter") selectReport(r.id); });
+
+      reportListEl.appendChild(li);
+    });
+  }
+
+  // Select a report by id -> load details and show on map
+  async function selectReport(reportId) {
+    // visually mark selected in list
+    document.querySelectorAll("#reportList li").forEach(li => li.classList.remove("selected"));
+    const selectedLi = document.querySelector(`#reportList li[data-id="${reportId}"]`);
+    if (selectedLi) selectedLi.classList.add("selected");
+
+    // fetch latest doc
+    try {
+      const docRef = doc(db, "reports", reportId);
+      const snap = await getDoc(docRef);
+      if (!snap.exists()) {
+        alert("Report not found.");
+        return;
+      }
+      const data = snap.data();
+      selectedReport = { id: snap.id, ...data };
+
+      // populate details
+      detailTitle.textContent = selectedReport.issueType || selectedReport.issue || "Report";
+      detailSub.textContent = `${selectedReport.barangay || ""} — ${selectedReport.location || ""}`;
+      detailIssue.textContent = selectedReport.issueType || selectedReport.issue || "—";
+      detailLocation.textContent = `${selectedReport.barangay || ""} • ${selectedReport.location || ""}`;
+      detailAuthor.textContent = selectedReport.author || selectedReport.name || "Anonymous";
+      detailTimestamp.textContent = fmt(selectedReport.timestamp || selectedReport.createdAt || Date.now());
+      detailDesc.textContent = selectedReport.desc || selectedReport.description || "No description provided";
+      detailStatus.textContent = selectedReport.status || "Pending";
+      // timeline (history array) or lastMessage
+      renderTimeline(selectedReport);
+      renderGallery(selectedReport);
+
+      // map pin
+      const lat = selectedReport.lat ?? (selectedReport.coords ? selectedReport.coords[0] : null);
+      const lng = selectedReport.lng ?? (selectedReport.coords ? selectedReport.coords[1] : null);
+
+      if (lat != null && lng != null) {
+        setMapPin(lat, lng, false);
+        map.setView([lat, lng], 17);
+      } else {
+        // fallback: try center on barangay approximate
+        map.setView([14.5585, 121.0271], 15);
+        removeMapPin();
+      }
+
+      // rebuild status buttons
+      buildStatusButtons(selectedReport.status);
+    } catch (err) {
+      console.error("selectReport error", err);
+    }
+  }
+
+  // Render timeline: prefer history array; fallback to lastMessage
+  function renderTimeline(report) {
+    timelineEl.innerHTML = "";
+    const history = report.history || [];
+    if (Array.isArray(history) && history.length > 0) {
+      history.slice().reverse().forEach(h => {
+        const div = document.createElement("div");
+        div.style.marginBottom = "8px";
+        div.innerHTML = `<div class="muted small">${fmt(h.ts || h.timestamp || h.time || Date.now())}</div><div>${h.text}</div>`;
+        timelineEl.appendChild(div);
+      });
+    } else if (report.lastMessage) {
+      const div = document.createElement("div");
+      div.innerHTML = `<div class="muted small">${fmt(report.lastUpdate||report.updatedAt||Date.now())}</div><div>${report.lastMessage}</div>`;
+      timelineEl.appendChild(div);
+    } else {
+      timelineEl.innerHTML = `<div class="muted small">No updates yet</div>`;
+    }
+  }
+
+  // Render proof gallery (proofUrls or stored media)
+  function renderGallery(report) {
+    proofGallery.innerHTML = "";
+    const urls = report.proofUrls || report.proofs || [];
+    if (!Array.isArray(urls) || urls.length === 0) {
+      proofGallery.innerHTML = `<div class="muted small">No media</div>`;
+      return;
+    }
+    urls.forEach(u => {
+      const d = document.createElement("div"); d.className = "thumb";
+      if (/\.(mp4|webm|ogg)$/i.test(u) || u.includes("video")) {
+        const v = document.createElement("video"); v.src = u; v.controls = true; d.appendChild(v);
+      } else {
+        const img = new Image(); img.src = u; d.appendChild(img);
+      }
+      proofGallery.appendChild(d);
+    });
+  }
+
+  // Map helpers
+  function setMapPin(lat, lng, save) {
+    if (currentMarker) {
+      currentMarker.setLatLng([lat, lng]);
+    } else {
+      currentMarker = L.marker([lat, lng], { draggable: true }).addTo(map);
+      currentMarker.on('dragend', async () => {
+        const p = currentMarker.getLatLng();
+        latOut.textContent = p.lat.toFixed(6);
+        lngOut.textContent = p.lng.toFixed(6);
+        if (selectedReport) {
+          // save coordinates to Firestore
+          await updateDoc(doc(db, "reports", selectedReport.id), { lat: p.lat, lng: p.lng });
+          // refresh local
+          await loadReports();
+          await selectReport(selectedReport.id);
+        }
+      });
+    }
+    latOut.textContent = lat.toFixed(6);
+    lngOut.textContent = lng.toFixed(6);
+
+    if (save && selectedReport) {
+      // persist to Firestore
+      updateDoc(doc(db, "reports", selectedReport.id), { lat, lng })
+        .catch(err => console.error("save pin error", err));
+    }
+  }
+
+  function removeMapPin() {
+    if (currentMarker) {
+      map.removeLayer(currentMarker);
+      currentMarker = null;
+      latOut.textContent = '—';
+      lngOut.textContent = '—';
+    }
+  }
+
+  // Build status change buttons
+  function buildStatusButtons(currentStatus) {
+    statusBar.innerHTML = "";
+    const statuses = ["Pending", "In Progress", "Resolved", "Closed"];
+    statuses.forEach(s => {
+      const b = document.createElement("button");
+      b.className = "btn";
+      if (s === currentStatus) {
+        b.style.background = "var(--green)";
+        b.style.color = "white";
+      } else {
+        b.classList.add("secondary");
+      }
+      b.textContent = s;
+      b.addEventListener("click", () => changeStatus(s));
+      statusBar.appendChild(b);
+    });
+  }
+
+  // Change status for selected report
+  async function changeStatus(newStatus) {
+    if (!selectedReport) { alert("Open a report first"); return; }
+    try {
+      await updateDoc(doc(db, "reports", selectedReport.id), {
+        status: newStatus,
+        lastUpdate: serverTimestamp()
+      });
+      // append a history record
+      await updateDoc(doc(db, "reports", selectedReport.id), {
+        history: arrayUnion({ ts: new Date().toISOString(), text: `Status changed to ${newStatus}`, author: currentUser.name || 'Official' })
+      });
+      // refresh
+      await loadReports();
+      await selectReport(selectedReport.id);
+    } catch (err) {
+      console.error("changeStatus error", err);
+      alert("Failed to change status.");
+    }
+  }
+
+  // Post update (text + optional media)
+  postUpdateBtn.addEventListener("click", async () => {
+    if (!selectedReport) { alert("Open a report first"); return; }
+    const text = updateText.value.trim();
+    const files = Array.from(updateMedia.files || []);
+    if (!text && files.length === 0) { alert("Write an update or attach media"); return; }
+
+    // Upload files first
+    const uploadedUrls = [];
+    try {
+      for (const f of files) {
+        const path = `proofs/${selectedReport.id}/${Date.now()}_${f.name}`;
+        const sfRef = storageRef(storage, path);
+        const snap = await uploadBytes(sfRef, f);
+        const url = await getDownloadURL(sfRef);
+        uploadedUrls.push(url);
+      }
+
+      // build update object
+      const updateObj = {
+        ts: new Date().toISOString(),
+        text: text || (uploadedUrls.length ? "Attached media" : ""),
+        author: currentUser.name || "Official",
+        files: uploadedUrls
+      };
+
+      // append to history array and proofUrls
+      await updateDoc(doc(db, "reports", selectedReport.id), {
+        history: arrayUnion(updateObj),
+        proofUrls: arrayUnion(...uploadedUrls),
+        lastUpdate: serverTimestamp(),
+        lastMessage: text || (uploadedUrls.length ? "Attached media" : "")
+      });
+
+      // clear inputs and refresh view
+      updateText.value = "";
+      updateMedia.value = "";
+      await loadReports();
+      await selectReport(selectedReport.id);
+    } catch (err) {
+      console.error("postUpdate error", err);
+      alert("Failed to post update. See console.");
+    }
+  });
+
+  // Wire filter/search/refresh
+  filterStatusEl.addEventListener("change", renderReportList);
+  searchInputEl.addEventListener("input", () => renderReportList());
+  refreshBtn.addEventListener("click", () => loadReports());
+
+  // init: load reports
+  loadReports();
+
+  // (Optional) realtime watcher for the reports collection for this barangay:
+  // uncomment if you want live updates:
+  /*
+  (async () => {
+    const q = query(collection(db,"reports"), where("barangay","==", currentUser.barangay || "Santa Cruz"));
+    onSnapshot(q, snap => {
+      allReports = [];
+      snap.forEach(s => allReports.push({ id: s.id, ...s.data() }) );
+      renderReportList();
+      // if selected report changed externally, refresh details
+      if (selectedReport) {
+        const found = allReports.find(r => r.id === selectedReport.id);
+        if (found) selectReport(found.id);
+      }
+    });
+  })();
+  */
+
 </script>
 </body>
 </html>
