@@ -12,6 +12,8 @@
     #reportForm textarea { box-sizing: border-box; width: 98%; margin-right: 2%; }
     #reportForm input[type="file"] { display: block; margin: 10px 0 20px 0; padding: 10px 0; width: 98%; }
     #street-group, #details-group { display: none; }
+    .report-item { background: #f9f9f9; margin: 8px 0; padding: 10px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .report-item img { max-width: 120px; margin-top: 4px; border-radius: 8px; display: block; }
   </style>
 </head>
 <body>
@@ -89,224 +91,163 @@
 
   <footer class="foot"><small>BarangayConnect — Resident Report Page</small></footer>
 
-  <script>
-    // === AUTH CHECK ===
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+    // === Firebase Config ===
+    const firebaseConfig = {
+      apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
+      authDomain: "iss-bc.firebaseapp.com",
+      projectId: "iss-bc",
+      storageBucket: "iss-bc.firebasestorage.app",
+      messagingSenderId: "455122393981",
+      appId: "1:455122393981:web:bdf281da744767c0064a14",
+    };
+
+    // === Initialize Firebase ===
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    // === Auth Check ===
     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    if (!currentUser) {
-      window.location.href = "index.html";
-    } else if (currentUser.role !== "resident") {
+    if (!currentUser || currentUser.role !== "resident") {
       alert("Unauthorized access. Redirecting...");
       window.location.href = "index.html";
     } else {
-      document.getElementById("welcomeText").textContent = 
-        `Welcome, ${currentUser.name || "Resident"}!`;
+      document.getElementById("welcomeText").textContent = `Welcome, ${currentUser.name || "Resident"}!`;
     }
 
-    // === LOGOUT HANDLER ===
+    // === Logout ===
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("currentUser");
       window.location.href = "index.html";
     });
 
-    // === REPORT FORM LOGIC ===
-    document.addEventListener("DOMContentLoaded", () => {
-      const form = document.getElementById("reportForm");
-      const brgySelect = document.getElementById("brgy");
-      const streetGroup = document.getElementById("street-group");
-      const streetSelect = document.getElementById("street");
-      const detailsGroup = document.getElementById("details-group");
-      const streetOptions = streetSelect.querySelectorAll("option");
-      const reportContainer = document.getElementById("reportsContainer");
+    // === Dropdown Logic ===
+    const brgySelect = document.getElementById("brgy");
+    const streetGroup = document.getElementById("street-group");
+    const streetSelect = document.getElementById("street");
+    const detailsGroup = document.getElementById("details-group");
+    const streetOptions = streetSelect.querySelectorAll("option");
 
-      const updateDetailsVisibility = () => {
-        const isBrgySelected = brgySelect.value !== "";
-        const isStreetSelected = streetSelect.value !== "";
-        detailsGroup.style.display = (isBrgySelected && isStreetSelected) ? "block" : "none";
-      };
+    const updateDetailsVisibility = () => {
+      const isBrgySelected = brgySelect.value !== "";
+      const isStreetSelected = streetSelect.value !== "";
+      detailsGroup.style.display = (isBrgySelected && isStreetSelected) ? "block" : "none";
+    };
 
-      const updateStreets = () => {
-        const selectedBrgy = brgySelect.value;
-        if (selectedBrgy !== "") {
-          streetGroup.style.display = "block";
-        } else {
-          streetGroup.style.display = "none";
-          streetSelect.value = "";
-          updateDetailsVisibility();
+    const updateStreets = () => {
+      const selectedBrgy = brgySelect.value;
+      if (selectedBrgy !== "") {
+        streetGroup.style.display = "block";
+      } else {
+        streetGroup.style.display = "none";
+        streetSelect.value = "";
+        updateDetailsVisibility();
+        return;
+      }
+
+      streetOptions.forEach(option => {
+        const optionBrgy = option.getAttribute("data-brgy");
+        if (option.value === "") {
+          option.style.display = "block";
           return;
         }
 
-        streetOptions.forEach(option => {
-          const optionBrgy = option.getAttribute("data-brgy");
-          if (option.value === "") {
-            option.style.display = "block";
-            return;
-          }
-
-          if (optionBrgy === selectedBrgy) {
-            option.style.display = "block";
-          } else {
-            option.style.display = "none";
-            if (option.selected) {
-              streetSelect.value = "";
-            }
-          }
-        });
-        updateDetailsVisibility();
-      };
-
-      brgySelect.addEventListener("change", updateStreets);
-      streetSelect.addEventListener("change", updateDetailsVisibility);
-
-      const reportKey = `reports_${currentUser.username || "resident"}`;
-      const loadReports = () => {
-        const reports = JSON.parse(localStorage.getItem(reportKey)) || [];
-        reportContainer.innerHTML = "";
-        if (reports.length === 0) {
-          reportContainer.innerHTML = "<p>No reports submitted yet.</p>";
+        if (optionBrgy === selectedBrgy) {
+          option.style.display = "block";
         } else {
-          reports.forEach(r => {
-            const div = document.createElement("div");
-            div.classList.add("report-item");
-            div.innerHTML = `
-              <strong>${r.issueType}</strong> — ${r.barangay}, ${r.location}<br>
-              <em>${r.desc}</em><br>
-              <small>Status: ${r.status} | Submitted: ${r.timestamp}</small>
-            `;
-            reportContainer.appendChild(div);
-          });
+          option.style.display = "none";
+          if (option.selected) streetSelect.value = "";
         }
-      };
+      });
+      updateDetailsVisibility();
+    };
 
-      loadReports();
+    brgySelect.addEventListener("change", updateStreets);
+    streetSelect.addEventListener("change", updateDetailsVisibility);
 
-      form.addEventListener("submit", e => {
-        e.preventDefault();
-        const issue = document.getElementById("issue").value;
-        const brgy = document.getElementById("brgy").value;
-        const street = document.getElementById("street").value;
-        const description = document.getElementById("description").value.trim();
+    // === Firestore: Submit Report ===
+    const reportForm = document.getElementById("reportForm");
+    const reportsContainer = document.getElementById("reportsContainer");
 
-        const reports = JSON.parse(localStorage.getItem(reportKey)) || [];
-        const newReport = {
-          id: Date.now(),
+    reportForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const issue = document.getElementById("issue").value;
+      const brgy = document.getElementById("brgy").value;
+      const street = document.getElementById("street").value;
+      const description = document.getElementById("description").value.trim();
+      const fileInput = document.getElementById("imageUpload");
+
+      try {
+        let imageUrl = null;
+        const file = fileInput.files[0];
+        if (file) {
+          const fileRef = ref(storage, `reports/${Date.now()}_${file.name}`);
+          await uploadBytes(fileRef, file);
+          imageUrl = await getDownloadURL(fileRef);
+        }
+
+        await addDoc(collection(db, "reports"), {
           issueType: issue,
           barangay: brgy,
           location: street,
           desc: description,
           author: currentUser?.name || "Anonymous",
           status: "Pending",
-          timestamp: new Date().toLocaleString()
-        };
-        reports.push(newReport);
-        localStorage.setItem(reportKey, JSON.stringify(reports));
+          timestamp: new Date().toISOString(),
+          imageUrl
+        });
 
         alert("Report submitted successfully!");
-        form.reset();
+        reportForm.reset();
         streetGroup.style.display = "none";
         detailsGroup.style.display = "none";
+
         loadReports();
-      });
+      } catch (err) {
+        console.error("Error submitting report:", err);
+        alert("Error submitting report. Try again.");
+      }
     });
-  </script>
-  <script src="script.js"></script>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-  // === Firebase Init ===
-  const firebaseConfig = {
-    apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
-    authDomain: "iss-bc.firebaseapp.com",
-    projectId: "iss-bc",
-    storageBucket: "iss-bc.firebasestorage.app",
-    messagingSenderId: "455122393981",
-    appId: "1:455122393981:web:bdf281da744767c0064a14",
-  };
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const storage = getStorage(app);
+    // === Firestore: Load User Reports ===
+    async function loadReports() {
+      reportsContainer.innerHTML = "<p>Loading reports...</p>";
 
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  const reportForm = document.getElementById("reportForm");
-  const reportsContainer = document.getElementById("reportsContainer");
+      const q = query(
+        collection(db, "reports"),
+        where("author", "==", currentUser?.name || "Anonymous"),
+        orderBy("timestamp", "desc")
+      );
 
-  // === Firestore Submission ===
-  reportForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
+      const snap = await getDocs(q);
+      reportsContainer.innerHTML = "";
 
-    const issue = document.getElementById("issue").value;
-    const brgy = document.getElementById("brgy").value;
-    const street = document.getElementById("street").value;
-    const description = document.getElementById("description").value.trim();
-    const fileInput = document.getElementById("imageUpload");
-
-    try {
-      let imageUrl = null;
-      const file = fileInput.files[0];
-      if (file) {
-        const fileRef = ref(storage, `reports/${Date.now()}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        imageUrl = await getDownloadURL(fileRef);
+      if (snap.empty) {
+        reportsContainer.innerHTML = "<p>No reports submitted yet.</p>";
+        return;
       }
 
-      await addDoc(collection(db, "reports"), {
-        issueType: issue,
-        barangay: brgy,
-        location: street,
-        desc: description,
-        author: currentUser?.name || "Anonymous",
-        status: "Pending",
-        timestamp: new Date().toISOString(),
-        imageUrl
+      snap.forEach((doc) => {
+        const r = doc.data();
+        const div = document.createElement("div");
+        div.classList.add("report-item");
+        div.innerHTML = `
+          <strong>${r.issueType}</strong> — ${r.barangay}, ${r.location}<br>
+          <em>${r.desc}</em><br>
+          <small>Status: ${r.status}</small><br>
+          ${r.imageUrl ? `<img src="${r.imageUrl}" alt="Proof">` : ""}
+        `;
+        reportsContainer.appendChild(div);
       });
-
-      alert("Report submitted successfully!");
-      reportForm.reset();
-      document.getElementById("street-group").style.display = "none";
-      document.getElementById("details-group").style.display = "none";
-
-      loadReports(); // reload the reports list
-    } catch (err) {
-      console.error("Error submitting report:", err);
-      alert("Error submitting report. Try again.");
-    }
-  });
-
-  // === Firestore Retrieval (Your Submitted Reports) ===
-  async function loadReports() {
-    reportsContainer.innerHTML = "<p>Loading reports...</p>";
-
-    const q = query(
-      collection(db, "reports"),
-      where("author", "==", currentUser?.name || "Anonymous"),
-      orderBy("timestamp", "desc")
-    );
-
-    const snap = await getDocs(q);
-    reportsContainer.innerHTML = "";
-
-    if (snap.empty) {
-      reportsContainer.innerHTML = "<p>No reports submitted yet.</p>";
-      return;
     }
 
-    snap.forEach((doc) => {
-      const r = doc.data();
-      const div = document.createElement("div");
-      div.classList.add("report-item");
-      div.innerHTML = `
-        <strong>${r.issueType}</strong> — ${r.barangay}, ${r.location}<br>
-        <em>${r.desc}</em><br>
-        <small>Status: ${r.status}</small><br>
-        ${r.imageUrl ? `<img src="${r.imageUrl}" alt="Proof" style="max-width:120px;margin-top:4px;border-radius:8px;">` : ""}
-      `;
-      reportsContainer.appendChild(div);
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", loadReports);
-</script>
-
+    document.addEventListener("DOMContentLoaded", loadReports);
+  </script>
 </body>
 </html>
