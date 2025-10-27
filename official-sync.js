@@ -1,8 +1,19 @@
-// official-sync.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+// ======================================================
+// BarangayConnect | Official Dashboard Firestore Sync
+// ======================================================
 
-// Firebase configuration for BarangayConnect 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { 
+  getFirestore, 
+  collection, 
+  getDocs, 
+  query, 
+  orderBy 
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+// ======================================================
+// Firebase Config (same as resident-sync.js)
+// ======================================================
 const firebaseConfig = {
   apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
   authDomain: "iss-bc.firebaseapp.com",
@@ -13,69 +24,92 @@ const firebaseConfig = {
   measurementId: "G-6VQLV0PG81"
 };
 
-
-// === Initialize Firestore ===
+// ======================================================
+// Initialize Firebase + Firestore
+// ======================================================
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// === Firestore Sync Functions ===
-const COL = collection(db, "execTickets");
+// ======================================================
+// DOM Elements
+// ======================================================
+const reportList = document.getElementById("reportReviewList");
+const refreshBtn = document.getElementById("refreshBtn");
+const statusMsg = document.getElementById("statusMessage");
 
-// Save to Firestore whenever DB changes locally
-function saveToFirestore(id, data) {
-  return setDoc(doc(COL, id), data);
-}
+// ======================================================
+// Load Reports from Firestore
+// ======================================================
+async function loadReports() {
+  if (!reportList) return;
 
-// Load from Firestore (for the ticket)
-async function loadFromFirestore(id) {
-  const snap = await getDoc(doc(COL, id));
-  return snap.exists() ? snap.data() : null;
-}
+  reportList.innerHTML = "<li>Loading reports...</li>";
+  
+  try {
+    const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
+    const snapshot = await getDocs(q);
 
-// Observe Firestore for real-time updates
-function subscribeToTicket(id, callback) {
-  return onSnapshot(doc(COL, id), (snap) => {
-    if (snap.exists()) callback(snap.data());
-  });
-}
+    reportList.innerHTML = ""; // clear placeholder
 
-// === Hook into your existing page ===
-window.addEventListener("load", () => {
-  const ticketInput = document.getElementById("ticketId");
-  const loadBtn = document.getElementById("loadBtn");
-
-  if (!ticketInput || !loadBtn) return;
-
-  loadBtn.addEventListener("click", async () => {
-    const id = ticketInput.value.trim();
-    if (!id) return alert("Enter a Ticket ID");
-
-    // Try Firestore first
-    const data = await loadFromFirestore(id);
-    if (data) {
-      // Replace localStorage copy
-      const DB = JSON.parse(localStorage.getItem("bc_exec_fw_min") || "{}");
-      DB[id] = data;
-      localStorage.setItem("bc_exec_fw_min", JSON.stringify(DB));
-      console.log("Loaded from Firestore ✅");
-    } else {
-      console.log("No Firestore data for this ticket yet. Using local copy.");
+    if (snapshot.empty) {
+      reportList.innerHTML = "<li>No reports available yet.</li>";
+      return;
     }
 
-    // Subscribe for live updates
-    subscribeToTicket(id, (data) => {
-      const DB = JSON.parse(localStorage.getItem("bc_exec_fw_min") || "{}");
-      DB[id] = data;
-      localStorage.setItem("bc_exec_fw_min", JSON.stringify(DB));
-      console.log("Realtime update from Firestore 🔄");
+    snapshot.forEach((doc) => {
+      const r = doc.data();
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <strong>${r.issueType || "Unknown Issue"}</strong><br>
+        📍 ${r.location || "No location"}<br>
+        🧑‍💼 Reported by: ${r.author || "Anonymous"}<br>
+        📝 ${r.description || ""}<br>
+        <small>Status: ${r.status || "Pending"}</small>
+      `;
+      li.style.marginBottom = "10px";
+      li.style.padding = "8px";
+      li.style.border = "1px solid #ccc";
+      li.style.borderRadius = "8px";
+      li.style.backgroundColor = "#f9f9f9";
+      reportList.appendChild(li);
     });
-  });
 
-  // Watch for localStorage changes and upload
-  window.addEventListener("beforeunload", () => {
-    const DB = JSON.parse(localStorage.getItem("bc_exec_fw_min") || "{}");
-    for (const [id, data] of Object.entries(DB)) {
-      saveToFirestore(id, data);
+    if (statusMsg) {
+      statusMsg.textContent = "✅ Reports updated successfully!";
+      statusMsg.style.color = "green";
     }
+
+  } catch (err) {
+    console.error("Error loading reports:", err);
+    reportList.innerHTML = "<li>❌ Failed to load reports.</li>";
+    if (statusMsg) {
+      statusMsg.textContent = "⚠️ Error loading reports.";
+      statusMsg.style.color = "red";
+    }
+  }
+}
+
+// ======================================================
+// Manual Refresh
+// ======================================================
+if (refreshBtn) {
+  refreshBtn.addEventListener("click", () => {
+    loadReports();
   });
-});
+}
+
+// ======================================================
+// Initial Load
+// ======================================================
+loadReports();
+
+// ======================================================
+// Logout (optional, matches your main script.js)
+// ======================================================
+const logoutBtn = document.getElementById("logoutBtn");
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", () => {
+    localStorage.removeItem("currentUser");
+    window.location.href = "index.html";
+  });
+}
