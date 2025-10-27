@@ -209,5 +209,37 @@
     });
   </script>
   <script src="script.js"></script>
+  <script type="module">
+  import { db } from "./firebaseConfig.js";
+  import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const reportForm = document.getElementById("reportForm");
+  const message = document.getElementById("reportMessage");
+
+  reportForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const issue = document.getElementById("issue").value;
+    const location = document.getElementById("location").value;
+    const description = document.getElementById("description").value;
+
+    try {
+      await addDoc(collection(db, "reports"), {
+        issue,
+        location,
+        description,
+        timestamp: new Date(),
+        status: "Pending"
+      });
+
+      message.textContent = " Report submitted successfully!";
+      reportForm.reset();
+    } catch (err) {
+      console.error("Error adding document: ", err);
+      message.textContent = " Error submitting report. Try again.";
+    }
+  });
+</script>
+
 </body>
 </html>
