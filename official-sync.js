@@ -2,9 +2,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// === Firebase Config ===
+// Firebase configuration for BarangayConnect 
 const firebaseConfig = {
-  apiKey: "AIzaSyD6f9Fo1aDebjEurvWFsffM33izUPUTylw",
+  apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
   authDomain: "iss-bc.firebaseapp.com",
   projectId: "iss-bc",
   storageBucket: "iss-bc.firebasestorage.app",
@@ -12,6 +12,7 @@ const firebaseConfig = {
   appId: "1:455122393981:web:bdf281da744767c0064a14",
   measurementId: "G-6VQLV0PG81"
 };
+
 
 // === Initialize Firestore ===
 const app = initializeApp(firebaseConfig);
