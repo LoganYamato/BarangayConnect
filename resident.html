@@ -90,9 +90,9 @@
 
  <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // === Firebase Config ===
+  // === FIREBASE CONFIG ===
   const firebaseConfig = {
     apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
     authDomain: "iss-bc.firebaseapp.com",
@@ -101,8 +101,6 @@
     messagingSenderId: "455122393981",
     appId: "1:455122393981:web:bdf281da744767c0064a14",
   };
-
-  // === Initialize Firebase ===
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
@@ -124,41 +122,49 @@
     window.location.href = "index.html";
   });
 
-  // === DASHBOARD FIRESTORE STATS ===
-  async function loadReportStats() {
-    const q = query(collection(db, "reports"), where("barangay", "==", "Santa Cruz"));
-    const snap = await getDocs(q);
+  // === LOAD CHART DATA FROM FIRESTORE ===
+  async function loadCharts() {
+    const wasteChart = document.getElementById("wasteChart");
+    const roadChart = document.getElementById("roadChart");
+    const safetyChart = document.getElementById("safetyChart");
+    const healthChart = document.getElementById("healthChart");
 
     const counts = { Waste: 0, Road: 0, Safety: 0, Health: 0 };
 
-    snap.forEach(doc => {
-      const r = doc.data();
-      if (counts[r.issueType] !== undefined) {
-        counts[r.issueType]++;
-      }
-    });
+    try {
+      const snapshot = await getDocs(collection(db, "reports"));
+      snapshot.forEach((doc) => {
+        const r = doc.data();
+        if (r.issueType && counts[r.issueType] !== undefined) {
+          counts[r.issueType]++;
+        }
+      });
 
-    // Update dashboard UI
-    document.getElementById("wasteChart").textContent = `Waste Reports: ${counts.Waste}`;
-    document.getElementById("roadChart").textContent = `Road Issues: ${counts.Road}`;
-    document.getElementById("safetyChart").textContent = `Safety Concerns: ${counts.Safety}`;
-    document.getElementById("healthChart").textContent = `Health Reports: ${counts.Health}`;
+      wasteChart.textContent = `Waste Reports: ${counts.Waste}`;
+      roadChart.textContent = `Road Issues: ${counts.Road}`;
+      safetyChart.textContent = `Safety Concerns: ${counts.Safety}`;
+      healthChart.textContent = `Health Reports: ${counts.Health}`;
 
-    // Add update timestamp
-    const dateNow = new Date().toLocaleString();
-    const charts = document.querySelectorAll(".chart");
-    charts.forEach(chart => {
-      chart.querySelector("p")?.remove();
-      const p = document.createElement("p");
-      p.style.fontSize = "0.8em";
-      p.style.color = "#555";
-      p.textContent = "Updated as of " + dateNow;
-      chart.appendChild(p);
-    });
+      const dateNow = new Date().toLocaleDateString();
+      document.querySelectorAll(".chart").forEach(chart => {
+        const p = document.createElement("p");
+        p.style.fontSize = "0.8em";
+        p.style.color = "#555";
+        p.textContent = "Updated as of " + dateNow;
+        chart.appendChild(p);
+      });
+    } catch (err) {
+      console.error("Error loading charts:", err);
+      wasteChart.textContent = "Error loading data.";
+      roadChart.textContent = "";
+      safetyChart.textContent = "";
+      healthChart.textContent = "";
+    }
   }
 
-  document.addEventListener("DOMContentLoaded", loadReportStats);
+  document.addEventListener("DOMContentLoaded", loadCharts);
 </script>
+
 
   <script src="script.js"></script>
 </body>
