@@ -5,7 +5,7 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebas
 
 // Your Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyD6f9Fo1aDebjEurvWFsffM33izUPUTylw",
+  apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
   authDomain: "iss-bc.firebaseapp.com",
   projectId: "iss-bc",
   storageBucket: "iss-bc.firebasestorage.app",
