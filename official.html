@@ -194,6 +194,7 @@
   // === Initialize Firebase ===
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  window.firestoreActive = true;
 
   // === Auth Check ===
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
@@ -297,14 +298,29 @@
   const reportsRef = collection(db, "reports");
   const q = query(reportsRef, where("barangay", "==", currentUser.barangay));
 
-  onSnapshot(
-    q,
-    (snapshot) => renderReports(snapshot),
-    (err) => {
-      console.error("Error loading reports:", err);
-      reportList.innerHTML = "<li style='color:red;text-align:center;'>Error loading reports.</li>";
-    }
-  );
+ const statusIndicator = document.createElement("div");
+statusIndicator.className = "small";
+statusIndicator.style.textAlign = "center";
+statusIndicator.style.margin = "6px 0";
+statusIndicator.style.color = "#16a34a"; // green
+statusIndicator.textContent = "Connecting to Firestore...";
+reportList.parentElement.prepend(statusIndicator);
+
+onSnapshot(
+  q,
+  (snapshot) => {
+    statusIndicator.textContent = "✅ Firestore Live Connected";
+    statusIndicator.style.color = "#16a34a";
+    renderReports(snapshot);
+  },
+  (err) => {
+    console.error("Error loading reports:", err);
+    statusIndicator.textContent = "❌ Firestore Error — check console";
+    statusIndicator.style.color = "red";
+    reportList.innerHTML = "<li style='color:red;text-align:center;'>Error loading reports.</li>";
+  }
+);
+
 </script>
 <!-- === Page logic and logout handling === -->
 <script src="official.js"></script>
