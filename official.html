@@ -149,384 +149,110 @@
 
 <!-- Firebase + App logic (module) -->
 <script type="module">
-  // --- Firebase imports ---
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getFirestore, collection, query, where, getDocs,
-    doc, getDoc, updateDoc, arrayUnion, serverTimestamp, onSnapshot
+  import { 
+    initializeApp 
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { 
+    getFirestore, collection, getDocs, query, where, doc, updateDoc, orderBy 
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-  // --- Your firebase config (from earlier) ---
+  // === FIREBASE INIT ===
   const firebaseConfig = {
     apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
     authDomain: "iss-bc.firebaseapp.com",
     projectId: "iss-bc",
     storageBucket: "iss-bc.firebasestorage.app",
     messagingSenderId: "455122393981",
-    appId: "1:455122393981:web:bdf281da744767c0064a14"
+    appId: "1:455122393981:web:bdf281da744767c0064a14",
   };
-
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-  const storage = getStorage(app);
 
-  // --- Elements & UI state ---
-  const reportListEl = document.getElementById("reportList");
-  const filterStatusEl = document.getElementById("filterStatus");
-  const searchInputEl = document.getElementById("searchInput");
-  const refreshBtn = document.getElementById("refreshBtn");
-
-  const detailTitle = document.getElementById("detailTitle");
-  const detailSub = document.getElementById("detailSub");
-  const detailIssue = document.getElementById("detailIssue");
-  const detailLocation = document.getElementById("detailLocation");
-  const detailAuthor = document.getElementById("detailAuthor");
-  const detailTimestamp = document.getElementById("detailTimestamp");
-  const detailDesc = document.getElementById("detailDesc");
-  const detailStatus = document.getElementById("detailStatus");
-
-  const statusBar = document.getElementById("statusBar");
-  const updateText = document.getElementById("updateText");
-  const updateMedia = document.getElementById("updateMedia");
-  const postUpdateBtn = document.getElementById("postUpdateBtn");
-  const timelineEl = document.getElementById("timeline");
-  const proofGallery = document.getElementById("proofGallery");
-
-  const latOut = document.getElementById("latOut");
-  const lngOut = document.getElementById("lngOut");
-  const officialBarangayEl = document.getElementById("officialBarangay");
-
-  // --- Map setup (Leaflet) ---
-  let map = L.map("map", { zoomControl: true }).setView([14.5585, 121.0271], 15);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 20 }).addTo(map);
-  let currentMarker = null;
-
-  // --- Authentication + access control (client-side prototype) ---
+  // === AUTH CHECK ===
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   if (!currentUser || currentUser.role !== "official") {
-    alert("Unauthorized. Please login as an official.");
+    alert("Unauthorized access. Redirecting...");
     window.location.href = "index.html";
   }
-  // show barangay in header
-  officialBarangayEl.textContent = currentUser.barangay || "Santa Cruz";
 
-  // logout handler
-  document.getElementById("logoutBtn").addEventListener("click", () => {
-    localStorage.removeItem("currentUser");
-    window.location.href = "index.html";
-  });
+  // === UI ELEMENTS ===
+  const reportList = document.getElementById("reportList");
+  const mapFrame = document.getElementById("mapFrame");
+  const statusSection = document.getElementById("statusSection");
+  const statusText = document.getElementById("statusText");
+  const statusButtons = document.getElementById("statusButtons");
 
-  // --- Local state for loaded reports ---
-  let allReports = []; // array of { id, data... }
   let selectedReport = null;
 
-  // Helpful utility
-  const fmt = ts => {
-    try {
-      return new Date(ts.seconds ? ts.seconds * 1000 : ts).toLocaleString();
-    } catch (e) {
-      return new Date().toLocaleString();
-    }
-  };
-
-  // Load reports for this official's barangay from Firestore
+  // === LOAD REPORTS ===
   async function loadReports() {
-    reportListEl.innerHTML = "<li class='small muted'>Loading reports…</li>";
-    allReports = [];
-
+    reportList.innerHTML = "<p>Loading reports...</p>";
     try {
       const q = query(
         collection(db, "reports"),
-        where("barangay", "==", (currentUser.barangay || "Santa Cruz"))
+        where("barangay", "==", currentUser.barangay || "Santa Cruz"),
+        orderBy("timestamp", "desc")
       );
+      const snap = await getDocs(q);
+      reportList.innerHTML = "";
 
-      const snaps = await getDocs(q);
-      snaps.forEach(snap => {
-        allReports.push({ id: snap.id, ...snap.data() });
-      });
-
-      // initial render
-      renderReportList();
-    } catch (err) {
-      console.error("loadReports error", err);
-      reportListEl.innerHTML = `<li class="muted small">Failed to load reports. Check console.</li>`;
-    }
-  }
-
-  // Render report list with filter + search
-  function renderReportList() {
-    const statusFilter = filterStatusEl.value;
-    const q = (searchInputEl.value || "").trim().toLowerCase();
-
-    const filtered = allReports.filter(r => {
-      const statusMatch = (statusFilter === "All") || (r.status === statusFilter);
-      const text = `${r.issueType||r.issue||""} ${r.location||""} ${r.author||r.name||""}`.toLowerCase();
-      const searchMatch = !q || text.includes(q);
-      return statusMatch && searchMatch;
-    });
-
-    if (filtered.length === 0) {
-      reportListEl.innerHTML = `<li class="muted small">No reports found.</li>`;
-      return;
-    }
-
-    reportListEl.innerHTML = "";
-    filtered.forEach((r, idx) => {
-      const li = document.createElement("li");
-      li.tabIndex = 0;
-      li.dataset.id = r.id;
-      li.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
-                        <div><strong>${r.issueType||r.issue||"Issue"}</strong><div class="muted small">${r.location||"Unknown"}</div></div>
-                        <div class="muted small">${r.status || "Pending"}</div>
-                      </div>`;
-      li.addEventListener("click", () => selectReport(r.id));
-      // keyboard accessibility
-      li.addEventListener("keypress", e => { if (e.key === "Enter") selectReport(r.id); });
-
-      reportListEl.appendChild(li);
-    });
-  }
-
-  // Select a report by id -> load details and show on map
-  async function selectReport(reportId) {
-    // visually mark selected in list
-    document.querySelectorAll("#reportList li").forEach(li => li.classList.remove("selected"));
-    const selectedLi = document.querySelector(`#reportList li[data-id="${reportId}"]`);
-    if (selectedLi) selectedLi.classList.add("selected");
-
-    // fetch latest doc
-    try {
-      const docRef = doc(db, "reports", reportId);
-      const snap = await getDoc(docRef);
-      if (!snap.exists()) {
-        alert("Report not found.");
+      if (snap.empty) {
+        reportList.innerHTML = "<p>No reports found for your barangay.</p>";
         return;
       }
-      const data = snap.data();
-      selectedReport = { id: snap.id, ...data };
 
-      // populate details
-      detailTitle.textContent = selectedReport.issueType || selectedReport.issue || "Report";
-      detailSub.textContent = `${selectedReport.barangay || ""} — ${selectedReport.location || ""}`;
-      detailIssue.textContent = selectedReport.issueType || selectedReport.issue || "—";
-      detailLocation.textContent = `${selectedReport.barangay || ""} • ${selectedReport.location || ""}`;
-      detailAuthor.textContent = selectedReport.author || selectedReport.name || "Anonymous";
-      detailTimestamp.textContent = fmt(selectedReport.timestamp || selectedReport.createdAt || Date.now());
-      detailDesc.textContent = selectedReport.desc || selectedReport.description || "No description provided";
-      detailStatus.textContent = selectedReport.status || "Pending";
-      // timeline (history array) or lastMessage
-      renderTimeline(selectedReport);
-      renderGallery(selectedReport);
-
-      // map pin
-      const lat = selectedReport.lat ?? (selectedReport.coords ? selectedReport.coords[0] : null);
-      const lng = selectedReport.lng ?? (selectedReport.coords ? selectedReport.coords[1] : null);
-
-      if (lat != null && lng != null) {
-        setMapPin(lat, lng, false);
-        map.setView([lat, lng], 17);
-      } else {
-        // fallback: try center on barangay approximate
-        map.setView([14.5585, 121.0271], 15);
-        removeMapPin();
-      }
-
-      // rebuild status buttons
-      buildStatusButtons(selectedReport.status);
-    } catch (err) {
-      console.error("selectReport error", err);
-    }
-  }
-
-  // Render timeline: prefer history array; fallback to lastMessage
-  function renderTimeline(report) {
-    timelineEl.innerHTML = "";
-    const history = report.history || [];
-    if (Array.isArray(history) && history.length > 0) {
-      history.slice().reverse().forEach(h => {
+      snap.forEach((docSnap) => {
+        const r = docSnap.data();
         const div = document.createElement("div");
-        div.style.marginBottom = "8px";
-        div.innerHTML = `<div class="muted small">${fmt(h.ts || h.timestamp || h.time || Date.now())}</div><div>${h.text}</div>`;
-        timelineEl.appendChild(div);
+        div.classList.add("report-item");
+        div.innerHTML = `
+          <strong>${r.issueType}</strong> — ${r.location}<br>
+          <em>${r.desc}</em><br>
+          <small>By ${r.author || "Anonymous"} | Status: ${r.status}</small>
+        `;
+        div.addEventListener("click", () => selectReport(docSnap.id, r));
+        reportList.appendChild(div);
       });
-    } else if (report.lastMessage) {
-      const div = document.createElement("div");
-      div.innerHTML = `<div class="muted small">${fmt(report.lastUpdate||report.updatedAt||Date.now())}</div><div>${report.lastMessage}</div>`;
-      timelineEl.appendChild(div);
-    } else {
-      timelineEl.innerHTML = `<div class="muted small">No updates yet</div>`;
-    }
-  }
-
-  // Render proof gallery (proofUrls or stored media)
-  function renderGallery(report) {
-    proofGallery.innerHTML = "";
-    const urls = report.proofUrls || report.proofs || [];
-    if (!Array.isArray(urls) || urls.length === 0) {
-      proofGallery.innerHTML = `<div class="muted small">No media</div>`;
-      return;
-    }
-    urls.forEach(u => {
-      const d = document.createElement("div"); d.className = "thumb";
-      if (/\.(mp4|webm|ogg)$/i.test(u) || u.includes("video")) {
-        const v = document.createElement("video"); v.src = u; v.controls = true; d.appendChild(v);
-      } else {
-        const img = new Image(); img.src = u; d.appendChild(img);
-      }
-      proofGallery.appendChild(d);
-    });
-  }
-
-  // Map helpers
-  function setMapPin(lat, lng, save) {
-    if (currentMarker) {
-      currentMarker.setLatLng([lat, lng]);
-    } else {
-      currentMarker = L.marker([lat, lng], { draggable: true }).addTo(map);
-      currentMarker.on('dragend', async () => {
-        const p = currentMarker.getLatLng();
-        latOut.textContent = p.lat.toFixed(6);
-        lngOut.textContent = p.lng.toFixed(6);
-        if (selectedReport) {
-          // save coordinates to Firestore
-          await updateDoc(doc(db, "reports", selectedReport.id), { lat: p.lat, lng: p.lng });
-          // refresh local
-          await loadReports();
-          await selectReport(selectedReport.id);
-        }
-      });
-    }
-    latOut.textContent = lat.toFixed(6);
-    lngOut.textContent = lng.toFixed(6);
-
-    if (save && selectedReport) {
-      // persist to Firestore
-      updateDoc(doc(db, "reports", selectedReport.id), { lat, lng })
-        .catch(err => console.error("save pin error", err));
-    }
-  }
-
-  function removeMapPin() {
-    if (currentMarker) {
-      map.removeLayer(currentMarker);
-      currentMarker = null;
-      latOut.textContent = '—';
-      lngOut.textContent = '—';
-    }
-  }
-
-  // Build status change buttons
-  function buildStatusButtons(currentStatus) {
-    statusBar.innerHTML = "";
-    const statuses = ["Pending", "In Progress", "Resolved", "Closed"];
-    statuses.forEach(s => {
-      const b = document.createElement("button");
-      b.className = "btn";
-      if (s === currentStatus) {
-        b.style.background = "var(--green)";
-        b.style.color = "white";
-      } else {
-        b.classList.add("secondary");
-      }
-      b.textContent = s;
-      b.addEventListener("click", () => changeStatus(s));
-      statusBar.appendChild(b);
-    });
-  }
-
-  // Change status for selected report
-  async function changeStatus(newStatus) {
-    if (!selectedReport) { alert("Open a report first"); return; }
-    try {
-      await updateDoc(doc(db, "reports", selectedReport.id), {
-        status: newStatus,
-        lastUpdate: serverTimestamp()
-      });
-      // append a history record
-      await updateDoc(doc(db, "reports", selectedReport.id), {
-        history: arrayUnion({ ts: new Date().toISOString(), text: `Status changed to ${newStatus}`, author: currentUser.name || 'Official' })
-      });
-      // refresh
-      await loadReports();
-      await selectReport(selectedReport.id);
     } catch (err) {
-      console.error("changeStatus error", err);
-      alert("Failed to change status.");
+      console.error("Error loading reports:", err);
+      reportList.innerHTML = "<p>Error loading reports.</p>";
     }
   }
 
-  // Post update (text + optional media)
-  postUpdateBtn.addEventListener("click", async () => {
-    if (!selectedReport) { alert("Open a report first"); return; }
-    const text = updateText.value.trim();
-    const files = Array.from(updateMedia.files || []);
-    if (!text && files.length === 0) { alert("Write an update or attach media"); return; }
+  // === SELECT REPORT HANDLER ===
+  function selectReport(id, report) {
+    selectedReport = { id, ...report };
+    document.querySelectorAll(".report-item").forEach(div => div.classList.remove("selected"));
+    event.currentTarget.classList.add("selected");
 
-    // Upload files first
-    const uploadedUrls = [];
+    // Update map
+    const queryText = `${report.location}, ${report.barangay}`;
+    mapFrame.src = `https://www.google.com/maps?q=${encodeURIComponent(queryText)}&z=16&output=embed`;
+
+    // Update status section
+    statusSection.style.display = "block";
+    statusText.textContent = `Current Status: ${report.status}`;
+  }
+
+  // === STATUS UPDATE HANDLER ===
+  statusButtons.addEventListener("click", async (e) => {
+    if (!e.target.dataset.status || !selectedReport) return;
+    const newStatus = e.target.dataset.status;
+
     try {
-      for (const f of files) {
-        const path = `proofs/${selectedReport.id}/${Date.now()}_${f.name}`;
-        const sfRef = storageRef(storage, path);
-        const snap = await uploadBytes(sfRef, f);
-        const url = await getDownloadURL(sfRef);
-        uploadedUrls.push(url);
-      }
-
-      // build update object
-      const updateObj = {
-        ts: new Date().toISOString(),
-        text: text || (uploadedUrls.length ? "Attached media" : ""),
-        author: currentUser.name || "Official",
-        files: uploadedUrls
-      };
-
-      // append to history array and proofUrls
-      await updateDoc(doc(db, "reports", selectedReport.id), {
-        history: arrayUnion(updateObj),
-        proofUrls: arrayUnion(...uploadedUrls),
-        lastUpdate: serverTimestamp(),
-        lastMessage: text || (uploadedUrls.length ? "Attached media" : "")
-      });
-
-      // clear inputs and refresh view
-      updateText.value = "";
-      updateMedia.value = "";
-      await loadReports();
-      await selectReport(selectedReport.id);
+      await updateDoc(doc(db, "reports", selectedReport.id), { status: newStatus });
+      alert(`Report marked as ${newStatus}`);
+      selectedReport.status = newStatus;
+      statusText.textContent = `Current Status: ${newStatus}`;
+      loadReports(); // Refresh list
     } catch (err) {
-      console.error("postUpdate error", err);
-      alert("Failed to post update. See console.");
+      console.error("Error updating status:", err);
+      alert("Failed to update status. Please try again.");
     }
   });
 
-  // Wire filter/search/refresh
-  filterStatusEl.addEventListener("change", renderReportList);
-  searchInputEl.addEventListener("input", () => renderReportList());
-  refreshBtn.addEventListener("click", () => loadReports());
-
-  // init: load reports
-  loadReports();
-
-  // (Optional) realtime watcher for the reports collection for this barangay:
-  // uncomment if you want live updates:
-  /*
-  (async () => {
-    const q = query(collection(db,"reports"), where("barangay","==", currentUser.barangay || "Santa Cruz"));
-    onSnapshot(q, snap => {
-      allReports = [];
-      snap.forEach(s => allReports.push({ id: s.id, ...s.data() }) );
-      renderReportList();
-      // if selected report changed externally, refresh details
-      if (selectedReport) {
-        const found = allReports.find(r => r.id === selectedReport.id);
-        if (found) selectReport(found.id);
-      }
-    });
-  })();
-  */
-
+  // === INITIAL LOAD ===
+  document.addEventListener("DOMContentLoaded", loadReports);
 </script>
 </body>
 </html>
