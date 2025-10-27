@@ -177,63 +177,117 @@
 <!-- === Firebase + Firestore logic (must load first) === -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { 
-    getFirestore, collection, getDocs, query, where, orderBy, doc, updateDoc 
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, collection, onSnapshot, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // === FIREBASE INIT ===
+  // === FIREBASE CONFIG ===
   const firebaseConfig = {
     apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
     authDomain: "iss-bc.firebaseapp.com",
     projectId: "iss-bc",
     storageBucket: "iss-bc.firebasestorage.app",
     messagingSenderId: "455122393981",
-    appId: "1:455122393981:web:bdf281da744767c0064a14"
+    appId: "1:455122393981:web:bdf281da744767c0064a14",
   };
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
   // === AUTH CHECK ===
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  if (!currentUser || currentUser.role !== "official") {
+  if (!currentUser) {
+    window.location.href = "index.html";
+  } else if (currentUser.role !== "official") {
     alert("Unauthorized access. Redirecting...");
     window.location.href = "index.html";
+  } else {
+    document.getElementById("welcomeText").textContent =
+      `Welcome, ${currentUser.name || "Official"}!`;
   }
 
-  // === REPORT FETCH ===
-  window.loadReports = async function () {
-    const list = document.getElementById("reportList");
-    list.innerHTML = "<p>Loading reports...</p>";
+  // === LOGOUT ===
+  document.getElementById("logoutBtn")?.addEventListener("click", () => {
+    localStorage.removeItem("currentUser");
+    window.location.href = "index.html";
+  });
 
-    try {
-      const q = query(
-        collection(db, "reports"),
-        where("barangay", "==", currentUser.barangay || "Santa Cruz"),
-        orderBy("timestamp", "desc")
-      );
-      const snap = await getDocs(q);
-      list.innerHTML = "";
+  const reportList = document.getElementById("reportReviewList");
 
-      if (snap.empty) {
-        list.innerHTML = "<p>No reports found for your barangay.</p>";
-        return;
+  // === LOAD REPORTS (REAL-TIME) ===
+  function renderReports(snapshot) {
+    reportList.innerHTML = "";
+    if (snapshot.empty) {
+      const li = document.createElement("li");
+      li.textContent = "No reports submitted yet.";
+      li.style.textAlign = "center";
+      li.style.color = "#666";
+      reportList.appendChild(li);
+      return;
+    }
+
+    snapshot.forEach((docSnap) => {
+      const r = docSnap.data();
+      const li = document.createElement("li");
+      li.style.marginBottom = "12px";
+      li.style.padding = "10px";
+      li.style.border = "1px solid #ccc";
+      li.style.borderRadius = "10px";
+      li.style.background = "#f9fafb";
+
+      const title = document.createElement("strong");
+      title.textContent = `${r.issueType || "Issue"} — ${r.barangay || ""} ${r.location || ""}`;
+      li.appendChild(title);
+
+      const info = document.createElement("div");
+      info.textContent = `Status: ${r.status || "Pending"} | Reported by: ${r.author || "Anonymous"}`;
+      info.style.fontSize = "13px";
+      info.style.marginTop = "4px";
+      li.appendChild(info);
+
+      // === STATUS BUTTONS ===
+      const btnContainer = document.createElement("div");
+      btnContainer.style.marginTop = "8px";
+      btnContainer.style.display = "flex";
+      btnContainer.style.gap = "6px";
+
+      const btnInProgress = document.createElement("button");
+      btnInProgress.textContent = "Mark In Progress";
+      btnInProgress.className = "status-btn blue";
+
+      const btnResolved = document.createElement("button");
+      btnResolved.textContent = "Mark Resolved";
+      btnResolved.className = "status-btn green";
+
+      // Disable if already resolved
+      if (r.status === "Resolved") {
+        btnInProgress.disabled = true;
+        btnResolved.disabled = true;
+        btnInProgress.style.opacity = "0.5";
+        btnResolved.style.opacity = "0.5";
       }
 
-      snap.forEach((docSnap) => {
-        const r = docSnap.data();
-        const li = document.createElement("li");
-        li.classList.add("report-item");
-        li.innerHTML = `
-          <strong>${r.issueType}</strong> — ${r.location}<br>
-          <small>By ${r.author || "Anonymous"} | Status: ${r.status}</small>
-        `;
-        list.appendChild(li);
+      // Update status in Firestore
+      btnInProgress.addEventListener("click", async () => {
+        await updateDoc(doc(db, "reports", docSnap.id), { status: "In Progress" });
       });
-    } catch (err) {
-      console.error("Error loading reports:", err);
-      list.innerHTML = "<p>Error loading reports.</p>";
-    }
-  };
+
+      btnResolved.addEventListener("click", async () => {
+        await updateDoc(doc(db, "reports", docSnap.id), { status: "Resolved" });
+      });
+
+      btnContainer.appendChild(btnInProgress);
+      btnContainer.appendChild(btnResolved);
+      li.appendChild(btnContainer);
+
+      reportList.appendChild(li);
+    });
+  }
+
+  // === REAL-TIME LISTENER ===
+  onSnapshot(collection(db, "reports"), (snapshot) => {
+    renderReports(snapshot);
+  }, (err) => {
+    console.error("Error loading reports:", err);
+    reportList.innerHTML = `<li style="color:red;text-align:center;">Error loading reports</li>`;
+  });
 </script>
 
 <!-- === Page logic and logout handling === -->
