@@ -5,18 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Official Dashboard — BarangayConnect</title>
 
-  <!-- Basic styles + responsive two-column layout -->
   <link rel="stylesheet" href="style.css">
   <style>
     :root{
       --blue:#1e5bb8; --green:#16a34a; --muted:#f4f6fb; --card:#ffffff;
       --text:#0f172a;
     }
-    .logo {
-  width: 36px;
-  height: 36px;
-  object-fit: contain;
-}
+    .logo{width:36px;height:36px;object-fit:contain}
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--muted);color:var(--text)}
     header{background:linear-gradient(90deg,var(--blue),#174a95);color:white;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -24,82 +19,36 @@
     header h1{font-size:18px;margin:0}
     #logoutBtn{background:#dc3545;border:0;color:white;padding:8px 12px;border-radius:8px;cursor:pointer}
     main{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px;max-width:1200px;margin:18px auto}
-    /* make responsive single-column on narrow screens */
-    @media (max-width:900px){ main{grid-template-columns:1fr; padding:12px; } }
-
-    /* Left column (list + filters) */
+    @media (max-width:900px){main{grid-template-columns:1fr;padding:12px}}
     .panel{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
-    .filter-row{display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 10px;
-  flex-wrap: wrap; 
-}
-.filter-row button {
-  flex-shrink: 0;
-}
+    .filter-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
     .filter-row select{padding:8px;border-radius:8px;border:1px solid #e6eefc}
     #reportList{list-style:none;margin:0;padding:0;max-height:72vh;overflow:auto}
     #reportList li{padding:12px;border-radius:8px;margin-bottom:8px;border:1px solid #eef3ff;cursor:pointer}
     #reportList li:hover{background:#f8fbff}
     #reportList li.selected{background:#e6f6ee;border-left:4px solid var(--blue);font-weight:600}
-#refreshBtn {
-  padding: 8px 10px;
-  font-size: 18px;
-  line-height: 1;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-}
-#refreshBtn:hover {
-  background: var(--blue);
-  color: white;
-}
-    /* detail column */
-    .detail-grid{display:flex;flex-direction:column;gap:12px}
-    .kv{display:grid;grid-template-columns:140px 1fr;gap:8px;padding:10px 0}
-    .pill{padding:6px 8px;border-radius:999px;border:1px solid #e6eefc;background:#fff;display:inline-block}
-    textarea{width:100%;min-height:80px;padding:10px;border-radius:8px;border:1px solid #e6eefc}
-    .btn{background:var(--blue);color:white;border:0;padding:10px 12px;border-radius:8px;cursor:pointer}
-    .btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--blue)}
-    .status-buttons{display:flex;gap:8px;flex-wrap:wrap}
-    #map{height:320px;border-radius:10px;border:1px solid #e6eefc}
-    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
-    .thumb{height:90px;border-radius:8px;overflow:hidden;border:1px solid #eef3ff;display:grid;place-items:center;background:#fafcff}
-    .thumb img, .thumb video{width:100%;height:100%;object-fit:cover}
-    .small{font-size:13px;color:#516179}
-    .muted{color:#6b7280;font-size:13px}
+    #refreshBtn{padding:8px 10px;font-size:18px;line-height:1;font-weight:bold;display:flex;align-items:center;justify-content:center;width:36px;height:36px}
+    #refreshBtn:hover{background:var(--blue);color:white}
   </style>
-
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
-<body>
 
+<body>
 <header>
   <div class="brand">
-    <div><img src="logo.png" alt="Barangay Logo" class="logo"> </div>
+    <img src="logo.png" alt="Barangay Logo" class="logo">
     <div>
       <h1>BarangayConnect — Official Dashboard</h1>
       <div class="muted" id="subHeader">Barangay — <span id="officialBarangay">—</span></div>
     </div>
   </div>
-
-  <div>
-    <button id="logoutBtn">Logout</button>
-  </div>
+  <button id="logoutBtn">Logout</button>
 </header>
 
 <main>
-  <!-- LEFT: List + Filters -->
   <aside class="panel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <h3 style="margin:0">Reports</h3>
-      <div class="muted small">Local / Firestore</div>
+      <div class="muted small">Live / Firestore</div>
     </div>
 
     <div class="filter-row">
@@ -109,105 +58,145 @@
         <option value="In Progress">In Progress</option>
         <option value="Resolved">Resolved</option>
       </select>
+
+      <select id="sortReports">
+        <option value="latest">Latest first</option>
+        <option value="oldest">Oldest first</option>
+      </select>
+
       <input id="searchInput" placeholder="Search issue / street" style="flex:1;padding:8px;border-radius:8px;border:1px solid #e6eefc" />
       <button id="refreshBtn" class="btn secondary">⟳</button>
+    </div>
+
+    <div id="statusIndicator" class="small" style="text-align:center;margin:6px 0;color:#16a34a">
+      Connecting to Firestore...
     </div>
 
     <ul id="reportList" aria-live="polite"></ul>
   </aside>
 
-  <!-- RIGHT: Detail panel -->
-  <section class="panel detail-grid">
-    <div>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <h2 id="detailTitle" style="margin:0">Select a report</h2>
-          <div class="muted small" id="detailSub">Click a report from the list to view details.</div>
-        </div>
-        <div>
-          <span class="pill" id="detailStatus">—</span>
-        </div>
-      </div>
-
-      <div class="kv" style="margin-top:12px">
-        <div class="small">Issue Type</div><div id="detailIssue">—</div>
-        <div class="small">Location</div><div id="detailLocation">—</div>
-        <div class="small">Reported By</div><div id="detailAuthor">—</div>
-        <div class="small">Submitted</div><div id="detailTimestamp">—</div>
-        <div class="small">Description</div><div id="detailDesc">—</div>
-      </div>
-    </div>
-
-    <!-- Status controls -->
-    <div>
-      <h4 style="margin:6px 0">Change status</h4>
-      <div class="status-buttons" id="statusBar"></div>
-    </div>
-
-    <!-- Post update -->
-    <div>
-      <h4 style="margin:6px 0">Post update</h4>
-      <textarea id="updateText" placeholder="Write a short update for the resident..."></textarea>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
-        <input id="updateMedia" type="file" accept="image/*,video/*" multiple />
-        <button id="postUpdateBtn" class="btn">Post Update</button>
-      </div>
-    </div>
-
-    <!-- Timeline + gallery + map -->
-    <div style="display:grid;grid-template-columns:1fr 240px;gap:12px">
-      <div>
-        <h4 style="margin:6px 0">Timeline</h4>
-        <div id="timeline" style="max-height:150px;overflow:auto;padding:8px;border-radius:8px;background:#fbfdff;border:1px solid #eef3ff"></div>
-        <h4 style="margin:8px 0 6px 0">Proof Media</h4>
-        <div class="gallery" id="proofGallery"></div>
-      </div>
-      <div>
-        <h4 style="margin:6px 0">Map</h4>
-        <div id="map"></div>
-        <div style="display:flex;gap:8px;margin-top:8px;justify-content:space-between">
-          <span class="pill small">Lat: <b id="latOut">—</b></span>
-          <span class="pill small">Lng: <b id="lngOut">—</b></span>
-        </div>
-      </div>
-    </div>
+  <section class="panel">
+    <h2>Select a report to view details</h2>
   </section>
 </main>
 
-<!-- === Firebase + Firestore logic (must load first) === --><script type="module">
+<!-- ========================= -->
+<script type="module">
   import { 
     initializeApp 
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { 
-    getFirestore, collection, query, where, onSnapshot, updateDoc, doc, getDocs 
+    getFirestore, collection, query, where, orderBy, onSnapshot, updateDoc, doc, getDocs 
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // === Firebase Config ===
   const firebaseConfig = {
     apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
     authDomain: "iss-bc.firebaseapp.com",
     projectId: "iss-bc",
-    storageBucket: "iss-bc.appspot.com", // ✅ FIXED: correct domain
+    storageBucket: "iss-bc.appspot.com",
     messagingSenderId: "455122393981",
     appId: "1:455122393981:web:bdf281da744767c0064a14",
   };
-
-  // === Initialize Firebase ===
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  if (!db) {
-    console.error("Firestore failed to initialize.");
-    alert("⚠️ Firestore connection failed. Please refresh the page.");
-  }
-
-  // === Auth Check ===
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   if (!currentUser || currentUser.role !== "official") {
-    alert("Unauthorized access. Redirecting...");
+    alert("Unauthorized access.");
     window.location.href = "index.html";
   }
   document.getElementById("officialBarangay").textContent = currentUser.barangay;
+
+  const reportList = document.getElementById("reportList");
+  const filterStatus = document.getElementById("filterStatus");
+  const sortReports = document.getElementById("sortReports");
+  const searchInput = document.getElementById("searchInput");
+  const refreshBtn = document.getElementById("refreshBtn");
+  const statusIndicator = document.getElementById("statusIndicator");
+
+  let unsubscribe = null;
+  let cachedReports = [];
+
+  function toast(msg, color="#1e5bb8") {
+    const t=document.createElement("div");
+    t.textContent=msg;
+    Object.assign(t.style,{
+      position:"fixed",bottom:"20px",right:"20px",background:color,
+      color:"white",padding:"10px 14px",borderRadius:"8px",boxShadow:"0 3px 8px rgba(0,0,0,0.25)",zIndex:9999,opacity:"0",transition:"opacity 0.3s"
+    });
+    document.body.appendChild(t);
+    setTimeout(()=>t.style.opacity="1",10);
+    setTimeout(()=>{t.style.opacity="0";setTimeout(()=>t.remove(),400)},3000);
+  }
+
+  function renderReports(snapshotOrArray) {
+    reportList.innerHTML = "";
+    const reports = Array.isArray(snapshotOrArray)
+      ? snapshotOrArray
+      : snapshotOrArray.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    if (reports.length === 0) {
+      const li = document.createElement("li");
+      li.textContent = "No reports found.";
+      li.style.textAlign = "center";
+      li.style.color = "#666";
+      reportList.appendChild(li);
+      return;
+    }
+
+    reports.forEach(r => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <strong>${r.issueType || "Unknown"} — ${r.location || ""}</strong>
+        <div class="small">Status: ${r.status || "Pending"} | Reporter: ${r.author || "Unknown"}</div>
+      `;
+      reportList.appendChild(li);
+    });
+  }
+
+  function buildQuery() {
+    const base = [where("barangay", "==", currentUser.barangay)];
+    const statusVal = filterStatus.value;
+    const sortVal = sortReports.value === "latest" ? "desc" : "asc";
+
+    if (statusVal !== "All") base.push(where("status", "==", statusVal));
+    return query(collection(db, "reports"), ...base, orderBy("timestamp", sortVal));
+  }
+
+  function attachListener() {
+    if (unsubscribe) unsubscribe();
+    const q = buildQuery();
+    unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        cachedReports = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderReports(cachedReports);
+        statusIndicator.textContent = "✅ Firestore Live Connected";
+        statusIndicator.style.color = "#16a34a";
+      },
+      (err) => {
+        console.error("Error:", err);
+        statusIndicator.textContent = "❌ Firestore Error";
+        statusIndicator.style.color = "red";
+      }
+    );
+  }
+
+  // === Filters & Search ===
+  filterStatus.addEventListener("change", attachListener);
+  sortReports.addEventListener("change", attachListener);
+
+  searchInput.addEventListener("input", () => {
+    const val = searchInput.value.toLowerCase();
+    const filtered = cachedReports.filter(r =>
+      (r.issueType?.toLowerCase().includes(val)) ||
+      (r.location?.toLowerCase().includes(val)) ||
+      (r.description?.toLowerCase().includes(val))
+    );
+    renderReports(filtered);
+  });
+
+  refreshBtn.addEventListener("click", attachListener);
 
   // === Logout ===
   document.getElementById("logoutBtn").addEventListener("click", () => {
@@ -215,157 +204,7 @@
     window.location.href = "index.html";
   });
 
-  // === UI References ===
-  const reportList = document.getElementById("reportList");
-
-  // ✅ Simple toast utility (replaces alerts)
-  function toast(msg, color = "#1e5bb8") {
-    const t = document.createElement("div");
-    t.textContent = msg;
-    Object.assign(t.style, {
-      position: "fixed",
-      bottom: "20px",
-      right: "20px",
-      background: color,
-      color: "white",
-      padding: "10px 14px",
-      borderRadius: "8px",
-      boxShadow: "0 3px 8px rgba(0,0,0,0.25)",
-      zIndex: 9999,
-      opacity: "0",
-      transition: "opacity 0.3s"
-    });
-    document.body.appendChild(t);
-    setTimeout(() => (t.style.opacity = "1"), 10);
-    setTimeout(() => {
-      t.style.opacity = "0";
-      setTimeout(() => t.remove(), 400);
-    }, 3000);
-  }
-
-  // === Render Reports Function ===
-  function renderReports(snapshot) {
-    reportList.innerHTML = "";
-
-    if (snapshot.empty) {
-      const li = document.createElement("li");
-      li.textContent = "No reports found for your barangay.";
-      li.style.textAlign = "center";
-      li.style.color = "#666";
-      reportList.appendChild(li);
-      return;
-    }
-
-    snapshot.forEach((docSnap) => {
-      const r = docSnap.data();
-      const li = document.createElement("li");
-      li.className = "report-item";
-      li.style.marginBottom = "12px";
-      li.style.padding = "10px";
-      li.style.border = "1px solid #ccc";
-      li.style.borderRadius = "10px";
-      li.style.background = "#f9fafb";
-
-      const title = document.createElement("strong");
-      title.textContent = `${r.issueType || "Unknown"} — ${r.barangay || ""} ${r.location || ""}`;
-      li.appendChild(title);
-
-      const info = document.createElement("div");
-      info.textContent = `Status: ${r.status || "Pending"} | Reported by: ${r.author || "Unknown"}`;
-      info.style.fontSize = "13px";
-      info.style.marginTop = "4px";
-      li.appendChild(info);
-
-      if (r.imageUrl) {
-        const img = document.createElement("img");
-        img.src = r.imageUrl;
-        img.alt = "Report Image";
-        img.style.maxWidth = "120px";
-        img.style.marginTop = "8px";
-        img.style.borderRadius = "6px";
-        li.appendChild(img);
-      }
-
-      // === Status update buttons ===
-      const btnContainer = document.createElement("div");
-      btnContainer.style.marginTop = "8px";
-      btnContainer.style.display = "flex";
-      btnContainer.style.gap = "6px";
-
-      const btnInProgress = document.createElement("button");
-      btnInProgress.textContent = "Mark In Progress";
-      btnInProgress.className = "btn secondary";
-
-      const btnResolved = document.createElement("button");
-      btnResolved.textContent = "Mark Resolved";
-      btnResolved.className = "btn";
-
-      if (r.status === "Resolved") {
-        btnInProgress.disabled = true;
-        btnResolved.disabled = true;
-        btnInProgress.style.opacity = "0.5";
-        btnResolved.style.opacity = "0.5";
-      }
-
-      btnInProgress.addEventListener("click", async () => {
-        await updateDoc(doc(db, "reports", docSnap.id), { status: "In Progress" });
-        toast("Report marked as In Progress", "#1e5bb8");
-      });
-
-      btnResolved.addEventListener("click", async () => {
-        await updateDoc(doc(db, "reports", docSnap.id), { status: "Resolved" });
-        toast("Report marked as Resolved", "#16a34a");
-      });
-
-      btnContainer.appendChild(btnInProgress);
-      btnContainer.appendChild(btnResolved);
-      li.appendChild(btnContainer);
-
-      reportList.appendChild(li);
-    });
-
-    reportList.classList.add("loaded");
-  }
-
-  // === Live Firestore Listener ===
-  const reportsRef = collection(db, "reports");
-  const q = query(reportsRef, where("barangay", "==", currentUser.barangay));
-
-  // Connection status indicator
-  const statusIndicator = document.createElement("div");
-  statusIndicator.className = "small";
-  statusIndicator.style.textAlign = "center";
-  statusIndicator.style.margin = "6px 0";
-  statusIndicator.style.color = "#16a34a";
-  statusIndicator.textContent = "Connecting to Firestore...";
-  reportList.parentElement.prepend(statusIndicator);
-
-  // Preload data before realtime updates
-  try {
-    const initial = await getDocs(q);
-    renderReports(initial);
-  } catch (err) {
-    console.error("Initial load failed:", err);
-    toast("Initial Firestore load failed", "red");
-  }
-
-  // Real-time listener
-  onSnapshot(
-    q,
-    (snapshot) => {
-      statusIndicator.textContent = "✅ Firestore Live Connected";
-      statusIndicator.style.color = "#16a34a";
-      renderReports(snapshot);
-    },
-    (err) => {
-      console.error("Error loading reports:", err);
-      statusIndicator.textContent = "❌ Firestore Error — check console";
-      statusIndicator.style.color = "red";
-      reportList.innerHTML = "<li style='color:red;text-align:center;'>Error loading reports.</li>";
-    }
-  );
+  attachListener(); // initial
 </script>
-<!-- === Page logic and logout handling === -->
-<script src="official.js"></script>
 </body>
 </html>
