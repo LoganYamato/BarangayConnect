@@ -174,11 +174,12 @@
   </section>
 </main>
 
-<!-- === Firebase + Firestore logic (must load first) === -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+<!-- === Firebase + Firestore logic (must load first) === --><script type="module">
   import { 
-    getFirestore, collection, query, where, onSnapshot, updateDoc, doc 
+    initializeApp 
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { 
+    getFirestore, collection, query, where, onSnapshot, updateDoc, doc, getDocs 
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   // === Firebase Config ===
@@ -186,7 +187,7 @@
     apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
     authDomain: "iss-bc.firebaseapp.com",
     projectId: "iss-bc",
-    storageBucket: "iss-bc.firebasestorage.app",
+    storageBucket: "iss-bc.appspot.com", // ✅ FIXED: correct domain
     messagingSenderId: "455122393981",
     appId: "1:455122393981:web:bdf281da744767c0064a14",
   };
@@ -194,7 +195,11 @@
   // === Initialize Firebase ===
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-  window.firestoreActive = true;
+
+  if (!db) {
+    console.error("Firestore failed to initialize.");
+    alert("⚠️ Firestore connection failed. Please refresh the page.");
+  }
 
   // === Auth Check ===
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
@@ -203,14 +208,40 @@
     window.location.href = "index.html";
   }
   document.getElementById("officialBarangay").textContent = currentUser.barangay;
+
   // === Logout ===
   document.getElementById("logoutBtn").addEventListener("click", () => {
     localStorage.removeItem("currentUser");
     window.location.href = "index.html";
   });
 
-  // === References ===
+  // === UI References ===
   const reportList = document.getElementById("reportList");
+
+  // ✅ Simple toast utility (replaces alerts)
+  function toast(msg, color = "#1e5bb8") {
+    const t = document.createElement("div");
+    t.textContent = msg;
+    Object.assign(t.style, {
+      position: "fixed",
+      bottom: "20px",
+      right: "20px",
+      background: color,
+      color: "white",
+      padding: "10px 14px",
+      borderRadius: "8px",
+      boxShadow: "0 3px 8px rgba(0,0,0,0.25)",
+      zIndex: 9999,
+      opacity: "0",
+      transition: "opacity 0.3s"
+    });
+    document.body.appendChild(t);
+    setTimeout(() => (t.style.opacity = "1"), 10);
+    setTimeout(() => {
+      t.style.opacity = "0";
+      setTimeout(() => t.remove(), 400);
+    }, 3000);
+  }
 
   // === Render Reports Function ===
   function renderReports(snapshot) {
@@ -263,11 +294,11 @@
 
       const btnInProgress = document.createElement("button");
       btnInProgress.textContent = "Mark In Progress";
-      btnInProgress.className = "status-btn blue";
+      btnInProgress.className = "btn secondary";
 
       const btnResolved = document.createElement("button");
       btnResolved.textContent = "Mark Resolved";
-      btnResolved.className = "status-btn green";
+      btnResolved.className = "btn";
 
       if (r.status === "Resolved") {
         btnInProgress.disabled = true;
@@ -278,12 +309,12 @@
 
       btnInProgress.addEventListener("click", async () => {
         await updateDoc(doc(db, "reports", docSnap.id), { status: "In Progress" });
-        alert(`Report marked as In Progress`);
+        toast("Report marked as In Progress", "#1e5bb8");
       });
 
       btnResolved.addEventListener("click", async () => {
         await updateDoc(doc(db, "reports", docSnap.id), { status: "Resolved" });
-        alert(`Report marked as Resolved`);
+        toast("Report marked as Resolved", "#16a34a");
       });
 
       btnContainer.appendChild(btnInProgress);
@@ -292,35 +323,47 @@
 
       reportList.appendChild(li);
     });
+
+    reportList.classList.add("loaded");
   }
 
   // === Live Firestore Listener ===
   const reportsRef = collection(db, "reports");
   const q = query(reportsRef, where("barangay", "==", currentUser.barangay));
 
- const statusIndicator = document.createElement("div");
-statusIndicator.className = "small";
-statusIndicator.style.textAlign = "center";
-statusIndicator.style.margin = "6px 0";
-statusIndicator.style.color = "#16a34a"; // green
-statusIndicator.textContent = "Connecting to Firestore...";
-reportList.parentElement.prepend(statusIndicator);
+  // Connection status indicator
+  const statusIndicator = document.createElement("div");
+  statusIndicator.className = "small";
+  statusIndicator.style.textAlign = "center";
+  statusIndicator.style.margin = "6px 0";
+  statusIndicator.style.color = "#16a34a";
+  statusIndicator.textContent = "Connecting to Firestore...";
+  reportList.parentElement.prepend(statusIndicator);
 
-onSnapshot(
-  q,
-  (snapshot) => {
-    statusIndicator.textContent = "✅ Firestore Live Connected";
-    statusIndicator.style.color = "#16a34a";
-    renderReports(snapshot);
-  },
-  (err) => {
-    console.error("Error loading reports:", err);
-    statusIndicator.textContent = "❌ Firestore Error — check console";
-    statusIndicator.style.color = "red";
-    reportList.innerHTML = "<li style='color:red;text-align:center;'>Error loading reports.</li>";
+  // Preload data before realtime updates
+  try {
+    const initial = await getDocs(q);
+    renderReports(initial);
+  } catch (err) {
+    console.error("Initial load failed:", err);
+    toast("Initial Firestore load failed", "red");
   }
-);
 
+  // Real-time listener
+  onSnapshot(
+    q,
+    (snapshot) => {
+      statusIndicator.textContent = "✅ Firestore Live Connected";
+      statusIndicator.style.color = "#16a34a";
+      renderReports(snapshot);
+    },
+    (err) => {
+      console.error("Error loading reports:", err);
+      statusIndicator.textContent = "❌ Firestore Error — check console";
+      statusIndicator.style.color = "red";
+      reportList.innerHTML = "<li style='color:red;text-align:center;'>Error loading reports.</li>";
+    }
+  );
 </script>
 <!-- === Page logic and logout handling === -->
 <script src="official.js"></script>
