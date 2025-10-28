@@ -165,154 +165,95 @@
   </main>
 
   <!-- ✅ Firestore + Chart Integration -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+ <script type="module">
+  import { app, db } from "./firebase-config.js";
+  import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // ⚙️ Firebase Config (replace with your own)
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  if (!currentUser || currentUser.role !== "lgu") {
+    alert("Access denied. LGU login required.");
+    window.location.href = "index.html";
+  } else {
+    document.getElementById("userInfo").textContent = `Welcome, ${currentUser.name} (${currentUser.email})`;
+  }
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    localStorage.removeItem("currentUser");
+    window.location.href = "index.html";
+  });
 
-    // 🧾 User Session Check
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    if (!currentUser || currentUser.role !== "lgu") {
-      alert("Access denied. LGU login required.");
-      window.location.href = "index.html";
-    } else {
-      document.getElementById("userInfo").textContent =
-        `Welcome, ${currentUser.name} (${currentUser.email})`;
-    }
+  // Firestore: Fetch all reports
+  const reportRef = collection(db, "reports");
+  const snapshot = await getDocs(reportRef);
+  const reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // 🚪 Logout
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
-      await signOut(auth);
-      localStorage.removeItem("currentUser");
-      window.location.href = "index.html";
-    });
+  console.log("✅ Reports loaded:", reports);
 
-    // 📡 Firestore Sync
-    const reportRef = collection(db, "reports");
-    const tableBody = document.querySelector("#reportTable tbody");
-    const totalReports = document.getElementById("totalReports");
-    const pendingCount = document.getElementById("pendingCount");
-    const inProgressCount = document.getElementById("inProgressCount");
-    const resolvedCount = document.getElementById("resolvedCount");
-    const filter = document.getElementById("barangayFilter");
-    const connStatus = document.getElementById("connectionStatus");
+  // Update Summary
+  const totalReports = document.getElementById("totalReports");
+  const pendingCount = document.getElementById("pendingCount");
+  const inProgressCount = document.getElementById("inProgressCount");
+  const resolvedCount = document.getElementById("resolvedCount");
+  const tableBody = document.querySelector("#reportTable tbody");
+  const filter = document.getElementById("barangayFilter");
 
-    let reports = [];
+  function updateSummary() {
+    totalReports.textContent = reports.length;
+    pendingCount.textContent = reports.filter(r => r.status === "Pending").length;
+    inProgressCount.textContent = reports.filter(r => r.status === "In Progress").length;
+    resolvedCount.textContent = reports.filter(r => r.status === "Resolved").length;
+  }
 
-    function updateSummary() {
-      totalReports.textContent = reports.length;
-      pendingCount.textContent = reports.filter(r => r.status === "Pending").length;
-      inProgressCount.textContent = reports.filter(r => r.status === "In Progress").length;
-      resolvedCount.textContent = reports.filter(r => r.status === "Resolved").length;
-    }
-
-    function loadReports(filterValue = "all") {
-      tableBody.innerHTML = "";
-      reports
-        .filter(r => filterValue === "all" || r.barangay === filterValue)
-        .forEach(r => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${r.barangay || "N/A"}</td>
-            <td>${r.author || "N/A"}</td>
-            <td>${r.issueType || "Unspecified"}</td>
-            <td>${r.status || "Pending"}</td>
-            <td>${r.timestamp ? new Date(r.timestamp).toLocaleString() : "N/A"}</td>
-          `;
-          tableBody.appendChild(row);
-        });
-    }
-
-    function updateBarangayFilter() {
-      const existing = new Set();
-      Array.from(filter.options).forEach(opt => existing.add(opt.value));
-
-      const barangays = Array.from(new Set(reports.map(r => r.barangay).filter(Boolean)));
-      barangays.forEach(b => {
-        if (!existing.has(b)) {
-          const option = document.createElement("option");
-          option.value = b;
-          option.textContent = b;
-          filter.appendChild(option);
-        }
+  function loadReports(filterValue = "all") {
+    tableBody.innerHTML = "";
+    reports
+      .filter(r => filterValue === "all" || r.barangay === filterValue)
+      .forEach(r => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${r.barangay}</td>
+          <td>${r.author || "N/A"}</td>
+          <td>${r.issueType || "Unknown"}</td>
+          <td>${r.status}</td>
+          <td>${new Date(r.timestamp).toLocaleString()}</td>
+        `;
+        tableBody.appendChild(row);
       });
-    }
+  }
 
-    function updateCharts() {
-      const barangayCounts = {};
-      const issueTypeCounts = {};
+  filter.addEventListener("change", e => loadReports(e.target.value));
 
-      reports.forEach(r => {
-        barangayCounts[r.barangay] = (barangayCounts[r.barangay] || 0) + 1;
-        issueTypeCounts[r.issueType] = (issueTypeCounts[r.issueType] || 0) + 1;
-      });
+  function updateCharts() {
+    const barangayCounts = {};
+    const issueTypeCounts = {};
 
-      barangayChart.data.labels = Object.keys(barangayCounts);
-      barangayChart.data.datasets[0].data = Object.values(barangayCounts);
-      barangayChart.update();
-
-      issueTypeChart.data.labels = Object.keys(issueTypeCounts);
-      issueTypeChart.data.datasets[0].data = Object.values(issueTypeCounts);
-      issueTypeChart.update();
-    }
-
-    // 🟢 Real-time Firestore listener with auto-update
-    try {
-      onSnapshot(
-        reportRef,
-        (snapshot) => {
-          reports = snapshot.docs.map(doc => doc.data());
-          connStatus.textContent = "Connected";
-          connStatus.classList.add("connected");
-
-          updateSummary();
-          updateBarangayFilter();
-          loadReports(filter.value);
-          updateCharts();
-        },
-        (error) => {
-          console.error("Firestore error:", error);
-          connStatus.textContent = "Offline";
-          connStatus.classList.remove("connected");
-        }
-      );
-    } catch (e) {
-      connStatus.textContent = "Offline";
-      connStatus.classList.remove("connected");
-    }
-
-    filter.addEventListener("change", e => loadReports(e.target.value));
-
-    // 📊 Initialize Charts
-    const barangayChart = new Chart(document.getElementById("barangayChart"), {
-      type: "bar",
-      data: {
-        labels: [],
-        datasets: [{ label: "Reports per Barangay", backgroundColor: "#003b8e", data: [] }]
-      }
+    reports.forEach(r => {
+      barangayCounts[r.barangay] = (barangayCounts[r.barangay] || 0) + 1;
+      issueTypeCounts[r.issueType] = (issueTypeCounts[r.issueType] || 0) + 1;
     });
 
-    const issueTypeChart = new Chart(document.getElementById("issueTypeChart"), {
-      type: "pie",
-      data: {
-        labels: [],
-        datasets: [{ label: "Issues", backgroundColor: ["#ff9800", "#4caf50", "#f44336", "#2196f3"], data: [] }]
-      }
-    });
-  </script>
+    barangayChart.data.labels = Object.keys(barangayCounts);
+    barangayChart.data.datasets[0].data = Object.values(barangayCounts);
+    barangayChart.update();
+
+    issueTypeChart.data.labels = Object.keys(issueTypeCounts);
+    issueTypeChart.data.datasets[0].data = Object.values(issueTypeCounts);
+    issueTypeChart.update();
+  }
+
+  const barangayChart = new Chart(document.getElementById("barangayChart"), {
+    type: "bar",
+    data: { labels: [], datasets: [{ label: "Reports per Barangay", backgroundColor: "#003b8e", data: [] }] }
+  });
+
+  const issueTypeChart = new Chart(document.getElementById("issueTypeChart"), {
+    type: "pie",
+    data: { labels: [], datasets: [{ label: "Issues", backgroundColor: ["#ff9800", "#4caf50", "#f44336", "#2196f3"], data: [] }] }
+  });
+
+  updateSummary();
+  loadReports();
+  updateCharts();
+</script>
 </body>
 </html>
