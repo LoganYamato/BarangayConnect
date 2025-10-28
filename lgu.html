@@ -196,7 +196,10 @@
   const resolvedCount = document.getElementById("resolvedCount");
   const tableBody = document.querySelector("#reportTable tbody");
   const filter = document.getElementById("barangayFilter");
-
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+    localStorage.removeItem("currentUser");
+    window.location.href = "index.html";
+    });
   function updateSummary() {
     totalReports.textContent = reports.length;
     pendingCount.textContent = reports.filter(r => r.status === "Pending").length;
