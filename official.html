@@ -29,7 +29,21 @@
     #reportList li.selected{background:#e6f6ee;border-left:4px solid var(--blue);font-weight:600}
     #refreshBtn{padding:8px 10px;font-size:18px;line-height:1;font-weight:bold;display:flex;align-items:center;justify-content:center;width:36px;height:36px}
     #refreshBtn:hover{background:var(--blue);color:white}
+
+    /* detail panel layout (keeps same IDs your current code expects) */
+    .detail-grid{display:flex;flex-direction:column;gap:12px}
+    .kv{display:grid;grid-template-columns:140px 1fr;gap:8px;padding:10px 0}
+    .pill{padding:6px 8px;border-radius:999px;border:1px solid #e6eefc;background:#fff;display:inline-block}
+    .status-buttons{display:flex;gap:8px;flex-wrap:wrap}
+    .small{font-size:13px;color:#516179}
+    .muted{color:#6b7280;font-size:13px}
+    #map{height:220px;border-radius:10px;border:1px solid #e6eefc}
+    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
   </style>
+
+  <!-- Leaflet (map for details) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
 <body>
@@ -64,7 +78,7 @@
         <option value="oldest">Oldest first</option>
       </select>
 
-      <input id="searchInput" placeholder="Search issue / street" style="flex:1;padding:8px;border-radius:8px;border:1px solid #e6eefc" />
+      <input id="searchInput" placeholder="Search issue / street / author" style="flex:1;padding:8px;border-radius:8px;border:1px solid #e6eefc" />
       <button id="refreshBtn" class="btn secondary">⟳</button>
     </div>
 
@@ -75,136 +89,49 @@
     <ul id="reportList" aria-live="polite"></ul>
   </aside>
 
-  <section class="panel">
-    <h2>Select a report to view details</h2>
+  <section class="panel detail-grid">
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <h2 id="detailTitle" style="margin:0">Select a report</h2>
+          <div class="muted small" id="detailSub">Click a report from the list to view details.</div>
+        </div>
+        <div>
+          <span class="pill" id="detailStatus">—</span>
+        </div>
+      </div>
+
+      <div class="kv" style="margin-top:12px">
+        <div class="small">Issue Type</div><div id="detailIssue">—</div>
+        <div class="small">Location</div><div id="detailLocation">—</div>
+        <div class="small">Reported By</div><div id="detailAuthor">—</div>
+        <div class="small">Submitted</div><div id="detailTimestamp">—</div>
+        <div class="small">Description</div><div id="detailDesc">—</div>
+      </div>
+    </div>
+
+    <div>
+      <h4 style="margin:6px 0">Change status</h4>
+      <div class="status-buttons" id="statusBar"></div>
+    </div>
+
+    <div>
+      <h4 style="margin:6px 0">Proof Media</h4>
+      <div class="gallery" id="proofGallery"></div>
+    </div>
+
+    <div>
+      <h4 style="margin:6px 0">Map</h4>
+      <div id="map"></div>
+      <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-start">
+        <span class="pill small">Lat: <b id="latOut">—</b></span>
+        <span class="pill small">Lng: <b id="lngOut">—</b></span>
+      </div>
+    </div>
   </section>
 </main>
 
-<!-- ========================= -->
-<script type="module">
-  import { 
-    initializeApp 
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { 
-    getFirestore, collection, query, where, orderBy, onSnapshot, updateDoc, doc, getDocs 
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
-    authDomain: "iss-bc.firebaseapp.com",
-    projectId: "iss-bc",
-    storageBucket: "iss-bc.appspot.com",
-    messagingSenderId: "455122393981",
-    appId: "1:455122393981:web:bdf281da744767c0064a14",
-  };
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  if (!currentUser || currentUser.role !== "official") {
-    alert("Unauthorized access.");
-    window.location.href = "index.html";
-  }
-  document.getElementById("officialBarangay").textContent = currentUser.barangay;
-
-  const reportList = document.getElementById("reportList");
-  const filterStatus = document.getElementById("filterStatus");
-  const sortReports = document.getElementById("sortReports");
-  const searchInput = document.getElementById("searchInput");
-  const refreshBtn = document.getElementById("refreshBtn");
-  const statusIndicator = document.getElementById("statusIndicator");
-
-  let unsubscribe = null;
-  let cachedReports = [];
-
-  function toast(msg, color="#1e5bb8") {
-    const t=document.createElement("div");
-    t.textContent=msg;
-    Object.assign(t.style,{
-      position:"fixed",bottom:"20px",right:"20px",background:color,
-      color:"white",padding:"10px 14px",borderRadius:"8px",boxShadow:"0 3px 8px rgba(0,0,0,0.25)",zIndex:9999,opacity:"0",transition:"opacity 0.3s"
-    });
-    document.body.appendChild(t);
-    setTimeout(()=>t.style.opacity="1",10);
-    setTimeout(()=>{t.style.opacity="0";setTimeout(()=>t.remove(),400)},3000);
-  }
-
-  function renderReports(snapshotOrArray) {
-    reportList.innerHTML = "";
-    const reports = Array.isArray(snapshotOrArray)
-      ? snapshotOrArray
-      : snapshotOrArray.docs.map(d => ({ id: d.id, ...d.data() }));
-
-    if (reports.length === 0) {
-      const li = document.createElement("li");
-      li.textContent = "No reports found.";
-      li.style.textAlign = "center";
-      li.style.color = "#666";
-      reportList.appendChild(li);
-      return;
-    }
-
-    reports.forEach(r => {
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <strong>${r.issueType || "Unknown"} — ${r.location || ""}</strong>
-        <div class="small">Status: ${r.status || "Pending"} | Reporter: ${r.author || "Unknown"}</div>
-      `;
-      reportList.appendChild(li);
-    });
-  }
-
-  function buildQuery() {
-    const base = [where("barangay", "==", currentUser.barangay)];
-    const statusVal = filterStatus.value;
-    const sortVal = sortReports.value === "latest" ? "desc" : "asc";
-
-    if (statusVal !== "All") base.push(where("status", "==", statusVal));
-    return query(collection(db, "reports"), ...base, orderBy("timestamp", sortVal));
-  }
-
-  function attachListener() {
-    if (unsubscribe) unsubscribe();
-    const q = buildQuery();
-    unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        cachedReports = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderReports(cachedReports);
-        statusIndicator.textContent = "✅ Firestore Live Connected";
-        statusIndicator.style.color = "#16a34a";
-      },
-      (err) => {
-        console.error("Error:", err);
-        statusIndicator.textContent = "❌ Firestore Error";
-        statusIndicator.style.color = "red";
-      }
-    );
-  }
-
-  // === Filters & Search ===
-  filterStatus.addEventListener("change", attachListener);
-  sortReports.addEventListener("change", attachListener);
-
-  searchInput.addEventListener("input", () => {
-    const val = searchInput.value.toLowerCase();
-    const filtered = cachedReports.filter(r =>
-      (r.issueType?.toLowerCase().includes(val)) ||
-      (r.location?.toLowerCase().includes(val)) ||
-      (r.description?.toLowerCase().includes(val))
-    );
-    renderReports(filtered);
-  });
-
-  refreshBtn.addEventListener("click", attachListener);
-
-  // === Logout ===
-  document.getElementById("logoutBtn").addEventListener("click", () => {
-    localStorage.removeItem("currentUser");
-    window.location.href = "index.html";
-  });
-
-  attachListener(); // initial
-</script>
+<!-- main script -->
+<script type="module" src="official.js"></script>
 </body>
 </html>
