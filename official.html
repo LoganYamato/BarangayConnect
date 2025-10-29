@@ -3,55 +3,72 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BarangayConnect | Official Dashboard</title>
+  <title>Barangay Official Dashboard</title>
   <link rel="stylesheet" href="style.css" />
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    // Import Firebase SDK
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB6Y_izKH1MEZVQlujYHjI4r9fhOdYKWZ0",
+      authDomain: "iss-bc.firebaseapp.com",
+      projectId: "iss-bc",
+      storageBucket: "iss-bc.firebasestorage.app",
+      messagingSenderId: "455122393981",
+      appId: "1:455122393981:web:bdf281da744767c0064a14",
+      measurementId: "G-6VQLV0PG81"
+    };
+
+    // Initialize Firebase globally
+    const app = initializeApp(firebaseConfig);
+    window.db = getFirestore(app);
+    window.auth = getAuth(app);
+  </script>
 </head>
+
 <body>
-  <header class="header">
-    <h2>Barangay Official Dashboard</h2>
-    <div class="user-info">
-      <span>Barangay: <strong id="officialBarangay"></strong></span>
-      <button id="logoutBtn" class="btn small danger">Logout</button>
-    </div>
+  <header>
+    <h1>Barangay Official Dashboard</h1>
+    <button id="logoutBtn">Logout</button>
   </header>
 
-  <main class="dashboard">
-    <!-- Reports Section -->
-    <section id="reportContainer" class="dashboard-section">
-      <h3>Resident Reports</h3>
+  <main>
+    <section id="filters">
+      <h2>Filter Reports</h2>
+      <label for="filterStatus">Status:</label>
+      <select id="filterStatus">
+        <option value="All">All</option>
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Resolved">Resolved</option>
+      </select>
+      <button id="refreshBtn">Refresh</button>
+    </section>
 
-      <!-- Controls -->
-      <div class="controls">
-        <input
-          id="searchBox"
-          type="text"
-          placeholder="Search reports..."
-          class="control-input"
-        />
-        <select id="filterStatus" class="control-select">
-          <option value="All">All statuses</option>
-          <option value="Pending">Pending</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Resolved">Resolved</option>
-        </select>
-        <select id="sortBy" class="control-select">
-          <option value="date">Sort by Date</option>
-          <option value="status">Sort by Status</option>
-        </select>
-      </div>
+    <section id="reports">
+      <h2>Resident Reports</h2>
+      <ul id="reportList">
+        <li>Loading reports...</li>
+      </ul>
+    </section>
 
-      <!-- Report List -->
-      <ul id="reportList" class="report-list"></ul>
-
-      <!-- ✅ Fix: Added detail view container -->
-      <div id="reportDetail" class="report-detail">
-        <p style="text-align:center;color:#666;">Select a report to view details.</p>
+    <section id="details">
+      <h2>Report Details</h2>
+      <div id="reportDetail">
+        <p>Select a report to see details here.</p>
       </div>
     </section>
   </main>
 
-  <!-- === Firebase + Logic === -->
-  <script type="module" src="official-sync.js"></script>
-  <script src="official.js"></script>
+  <footer>
+    <p>&copy; 2025 BarangayConnect</p>
+  </footer>
+
+  <!-- Link script -->
+  <script type="module" src="official.js"></script>
 </body>
 </html>
