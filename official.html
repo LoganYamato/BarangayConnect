@@ -1,97 +1,57 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Official Dashboard — BarangayConnect</title>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    :root{--blue:#1e5bb8;--green:#16a34a;--muted:#f4f6fb;--card:#ffffff;--text:#0f172a}
-    .logo{width:36px;height:36px;object-fit:contain}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--muted);color:var(--text)}
-    header{background:linear-gradient(90deg,var(--blue),#174a95);color:white;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-    header .brand{display:flex;gap:12px;align-items:center}
-    header h1{font-size:18px;margin:0}
-    #logoutBtn{background:#dc3545;border:0;color:white;padding:8px 12px;border-radius:8px;cursor:pointer}
-    main{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px;max-width:1200px;margin:18px auto}
-    @media (max-width:900px){main{grid-template-columns:1fr;padding:12px}}
-
-    .panel{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
-    .filter-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
-    .filter-row select, .filter-row input{padding:8px;border-radius:8px;border:1px solid #e6eefc}
-    #reportList{list-style:none;margin:0;padding:0;max-height:72vh;overflow:auto}
-    #reportList li{padding:12px;border-radius:8px;margin-bottom:8px;border:1px solid #eef3ff;cursor:pointer}
-    #reportList li:hover{background:#f8fbff}
-    #reportList li.selected{background:#e6f6ee;border-left:4px solid var(--blue);font-weight:600}
-    #refreshBtn{padding:8px 10px;font-size:18px;line-height:1;font-weight:bold;display:flex;align-items:center;justify-content:center;width:36px;height:36px}
-    .detail-grid{display:flex;flex-direction:column;gap:12px}
-    .kv{display:grid;grid-template-columns:140px 1fr;gap:8px;padding:10px 0}
-    .pill{padding:6px 8px;border-radius:999px;border:1px solid #e6eefc;background:#fff;display:inline-block}
-    textarea{width:100%;min-height:80px;padding:10px;border-radius:8px;border:1px solid #e6eefc}
-    .btn{background:var(--blue);color:white;border:0;padding:10px 12px;border-radius:8px;cursor:pointer}
-    .btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--blue)}
-    .small{font-size:13px;color:#516179}
-    .muted{color:#6b7280;font-size:13px}
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BarangayConnect | Official Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-
-<header>
-  <div class="brand">
-    <img src="logo.png" alt="Barangay Logo" class="logo">
-    <div>
-      <h1>BarangayConnect — Official Dashboard</h1>
-      <div class="muted" id="subHeader">Barangay — <span id="officialBarangay">—</span></div>
+  <header class="header">
+    <h2>Barangay Official Dashboard</h2>
+    <div class="user-info">
+      <span>Barangay: <strong id="officialBarangay"></strong></span>
+      <button id="logoutBtn" class="btn small danger">Logout</button>
     </div>
-  </div>
-  <button id="logoutBtn">Logout</button>
-</header>
+  </header>
 
-<main>
-  <aside class="panel">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <h3 style="margin:0">Reports</h3>
-      <div class="muted small">Live / Firestore</div>
-    </div>
+  <main class="dashboard">
+    <!-- Reports Section -->
+    <section id="reportContainer" class="dashboard-section">
+      <h3>Resident Reports</h3>
 
-    <div class="filter-row">
-      <select id="filterStatus">
-        <option value="All">All statuses</option>
-        <option value="Pending">Pending</option>
-        <option value="In Progress">In Progress</option>
-        <option value="Resolved">Resolved</option>
-      </select>
-
-      <select id="sortReports">
-        <option value="latest">Latest first</option>
-        <option value="oldest">Oldest first</option>
-      </select>
-
-      <input id="searchInput" placeholder="Search issue / street / desc" style="flex:1" />
-      <button id="refreshBtn" class="btn secondary">⟳</button>
-    </div>
-
-    <div id="statusIndicator" class="small" style="text-align:center;margin:6px 0;color:#16a34a">Connecting to Firestore...</div>
-
-    <ul id="reportList" aria-live="polite"></ul>
-  </aside>
-
-  <section class="panel">
-    <div id="detailPanel">
-      <h2 id="detailTitle">Select a report to view details</h2>
-      <div class="kv" style="margin-top:12px">
-        <div class="small">Issue Type</div><div id="detailIssue">—</div>
-        <div class="small">Location</div><div id="detailLocation">—</div>
-        <div class="small">Reported By</div><div id="detailAuthor">—</div>
-        <div class="small">Submitted</div><div id="detailTimestamp">—</div>
-        <div class="small">Description</div><div id="detailDesc">—</div>
+      <!-- Controls -->
+      <div class="controls">
+        <input
+          id="searchBox"
+          type="text"
+          placeholder="Search reports..."
+          class="control-input"
+        />
+        <select id="filterStatus" class="control-select">
+          <option value="All">All statuses</option>
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Resolved">Resolved</option>
+        </select>
+        <select id="sortBy" class="control-select">
+          <option value="date">Sort by Date</option>
+          <option value="status">Sort by Status</option>
+        </select>
       </div>
-      <div style="margin-top:12px" id="detailActions"></div>
-    </div>
-  </section>
-</main>
 
-<script type="module" src="official.js"></script>
+      <!-- Report List -->
+      <ul id="reportList" class="report-list"></ul>
+
+      <!-- ✅ Fix: Added detail view container -->
+      <div id="reportDetail" class="report-detail">
+        <p style="text-align:center;color:#666;">Select a report to view details.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- === Firebase + Logic === -->
+  <script type="module" src="official-sync.js"></script>
+  <script src="official.js"></script>
 </body>
 </html>
