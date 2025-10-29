@@ -5,60 +5,65 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Official Dashboard — BarangayConnect</title>
 
-  <link rel="stylesheet" href="style.css">
+  <!-- Inline styles (portable for presentation) -->
   <style>
     :root{
       --blue:#1e5bb8; --green:#16a34a; --muted:#f4f6fb; --card:#ffffff;
       --text:#0f172a;
     }
-    .logo{width:36px;height:36px;object-fit:contain}
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--muted);color:var(--text)}
     header{background:linear-gradient(90deg,var(--blue),#174a95);color:white;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
     header .brand{display:flex;gap:12px;align-items:center}
     header h1{font-size:18px;margin:0}
+    .logo{width:36px;height:36px;object-fit:contain;border-radius:6px;background:white;padding:4px}
     #logoutBtn{background:#dc3545;border:0;color:white;padding:8px 12px;border-radius:8px;cursor:pointer}
     main{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px;max-width:1200px;margin:18px auto}
     @media (max-width:900px){main{grid-template-columns:1fr;padding:12px}}
+
     .panel{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
     .filter-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
-    .filter-row select{padding:8px;border-radius:8px;border:1px solid #e6eefc}
+    .filter-row select, .filter-row input{padding:8px;border-radius:8px;border:1px solid #e6eefc}
     #reportList{list-style:none;margin:0;padding:0;max-height:72vh;overflow:auto}
     #reportList li{padding:12px;border-radius:8px;margin-bottom:8px;border:1px solid #eef3ff;cursor:pointer}
     #reportList li:hover{background:#f8fbff}
     #reportList li.selected{background:#e6f6ee;border-left:4px solid var(--blue);font-weight:600}
-    #refreshBtn{padding:8px 10px;font-size:18px;line-height:1;font-weight:bold;display:flex;align-items:center;justify-content:center;width:36px;height:36px}
-    #refreshBtn:hover{background:var(--blue);color:white}
 
-    /* detail panel layout (keeps same IDs your current code expects) */
     .detail-grid{display:flex;flex-direction:column;gap:12px}
     .kv{display:grid;grid-template-columns:140px 1fr;gap:8px;padding:10px 0}
     .pill{padding:6px 8px;border-radius:999px;border:1px solid #e6eefc;background:#fff;display:inline-block}
+    textarea{width:100%;min-height:80px;padding:10px;border-radius:8px;border:1px solid #e6eefc}
+    .btn{background:var(--blue);color:white;border:0;padding:10px 12px;border-radius:8px;cursor:pointer}
+    .btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--blue)}
     .status-buttons{display:flex;gap:8px;flex-wrap:wrap}
+    #map{height:240px;border-radius:10px;border:1px solid #e6eefc;background:#fff}
+    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
+    .thumb{height:90px;border-radius:8px;overflow:hidden;border:1px solid #eef3ff;display:grid;place-items:center;background:#fafcff}
+    .thumb img, .thumb video{width:100%;height:100%;object-fit:cover}
     .small{font-size:13px;color:#516179}
     .muted{color:#6b7280;font-size:13px}
-    #map{height:220px;border-radius:10px;border:1px solid #e6eefc}
-    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
+    .status-indicator{font-size:13px;text-align:center;margin:8px 0}
+    .right-empty { color:#6b7280; padding:24px; text-align:center; }
+    .timeline-item{margin-bottom:8px;padding:8px;border-radius:8px;background:#fbfdff;border:1px solid #eef3ff}
   </style>
-
-  <!-- Leaflet (map for details) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
-
 <body>
+
 <header>
   <div class="brand">
-    <img src="logo.png" alt="Barangay Logo" class="logo">
+    <div class="logo"><img src="logo.png" alt="Logo" style="width:100%;height:100%;object-fit:contain"></div>
     <div>
       <h1>BarangayConnect — Official Dashboard</h1>
-      <div class="muted" id="subHeader">Barangay — <span id="officialBarangay">—</span></div>
+      <div class="muted small" id="subHeader">Barangay — <span id="officialBarangay">—</span></div>
     </div>
   </div>
-  <button id="logoutBtn">Logout</button>
+  <div>
+    <button id="logoutBtn">Logout</button>
+  </div>
 </header>
 
 <main>
+  <!-- LEFT -->
   <aside class="panel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <h3 style="margin:0">Reports</h3>
@@ -66,72 +71,64 @@
     </div>
 
     <div class="filter-row">
-      <select id="filterStatus">
+      <select id="filterStatus" title="Filter by status">
         <option value="All">All statuses</option>
         <option value="Pending">Pending</option>
         <option value="In Progress">In Progress</option>
         <option value="Resolved">Resolved</option>
       </select>
 
-      <select id="sortReports">
+      <select id="sortReports" title="Sort by time">
         <option value="latest">Latest first</option>
         <option value="oldest">Oldest first</option>
       </select>
 
-      <input id="searchInput" placeholder="Search issue / street / author" style="flex:1;padding:8px;border-radius:8px;border:1px solid #e6eefc" />
-      <button id="refreshBtn" class="btn secondary">⟳</button>
+      <input id="searchInput" placeholder="Search issue / street / reporter" style="flex:1" />
+      <button id="refreshBtn" class="btn secondary" title="Refresh">⟳</button>
     </div>
 
-    <div id="statusIndicator" class="small" style="text-align:center;margin:6px 0;color:#16a34a">
-      Connecting to Firestore...
-    </div>
+    <div id="statusIndicator" class="status-indicator">Connecting to Firestore...</div>
 
     <ul id="reportList" aria-live="polite"></ul>
   </aside>
 
-  <section class="panel detail-grid">
-    <div>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <h2 id="detailTitle" style="margin:0">Select a report</h2>
-          <div class="muted small" id="detailSub">Click a report from the list to view details.</div>
-        </div>
-        <div>
-          <span class="pill" id="detailStatus">—</span>
-        </div>
-      </div>
+  <!-- RIGHT -->
+  <section class="panel detail-grid" id="detailPanel">
+    <div id="detailHeader">
+      <h2 id="detailTitle" style="margin:0">Select a report</h2>
+      <div class="muted small" id="detailSub">Click any report from the list to view details.</div>
+    </div>
 
-      <div class="kv" style="margin-top:12px">
+    <div id="detailBody" style="display:block">
+      <div class="kv">
         <div class="small">Issue Type</div><div id="detailIssue">—</div>
         <div class="small">Location</div><div id="detailLocation">—</div>
         <div class="small">Reported By</div><div id="detailAuthor">—</div>
         <div class="small">Submitted</div><div id="detailTimestamp">—</div>
         <div class="small">Description</div><div id="detailDesc">—</div>
       </div>
-    </div>
 
-    <div>
-      <h4 style="margin:6px 0">Change status</h4>
-      <div class="status-buttons" id="statusBar"></div>
-    </div>
+      <div>
+        <h4 style="margin:6px 0">Change status</h4>
+        <div class="status-buttons" id="statusBar"></div>
+      </div>
 
-    <div>
-      <h4 style="margin:6px 0">Proof Media</h4>
-      <div class="gallery" id="proofGallery"></div>
-    </div>
+      <div>
+        <h4 style="margin:6px 0">Timeline</h4>
+        <div id="timeline" style="max-height:160px;overflow:auto"></div>
+        <h4 style="margin:8px 0 6px 0">Proof Media</h4>
+        <div class="gallery" id="proofGallery"></div>
+      </div>
 
-    <div>
-      <h4 style="margin:6px 0">Map</h4>
-      <div id="map"></div>
-      <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-start">
-        <span class="pill small">Lat: <b id="latOut">—</b></span>
-        <span class="pill small">Lng: <b id="lngOut">—</b></span>
+      <div>
+        <h4 style="margin:6px 0">Map (if coordinates available)</h4>
+        <div id="map">No coordinates</div>
       </div>
     </div>
   </section>
 </main>
 
-<!-- main script -->
+<!-- Official script (module) -->
 <script type="module" src="official.js"></script>
 </body>
 </html>
