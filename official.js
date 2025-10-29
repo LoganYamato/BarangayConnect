@@ -1,22 +1,19 @@
-// official.js
-// Module that powers official.html (Firestore-backed)
-// Keep this file next to official.html and reference as module (type="module")
-
+// official.js (v2) — module
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
   collection,
   query,
   where,
+  orderBy,
   onSnapshot,
   getDocs,
   updateDoc,
-  doc
+  doc,
+  getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* =========================
-   Firebase config (use your project values)
-   ========================= */
+// --- Firebase config (same project) ---
 const firebaseConfig = {
   apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
   authDomain: "iss-bc.firebaseapp.com",
@@ -30,13 +27,13 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 window.firestoreActive = true;
 
-/* ======= UI refs ======= */
+// --- UI refs ---
 const reportList = document.getElementById("reportList");
-const filterSelect = document.getElementById("filterStatus");
-const sortSelect = document.getElementById("sortReports");
+const statusIndicator = document.getElementById("statusIndicator");
+const filterStatus = document.getElementById("filterStatus");
+const sortReports = document.getElementById("sortReports");
 const searchInput = document.getElementById("searchInput");
 const refreshBtn = document.getElementById("refreshBtn");
-const statusIndicator = document.getElementById("statusIndicator");
 
 const detailTitle = document.getElementById("detailTitle");
 const detailSub = document.getElementById("detailSub");
@@ -45,327 +42,193 @@ const detailLocation = document.getElementById("detailLocation");
 const detailAuthor = document.getElementById("detailAuthor");
 const detailTimestamp = document.getElementById("detailTimestamp");
 const detailDesc = document.getElementById("detailDesc");
+const detailStatus = document.getElementById("detailStatus");
 const statusBar = document.getElementById("statusBar");
-const timelineEl = document.getElementById("timeline");
 const proofGallery = document.getElementById("proofGallery");
+const latOut = document.getElementById("latOut");
+const lngOut = document.getElementById("lngOut");
+
+let map = L.map("map", { zoomControl: true }).setView([14.5585, 121.0271], 15);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 20 }).addTo(map);
+let marker = null;
+
+// --- user / barangay ---
+const currentUser = JSON.parse(localStorage.getItem("currentUser")) || { barangay: "Santa Cruz" };
+if (!currentUser || !currentUser.role || currentUser.role !== "official") {
+  // If not logged-in as official still allow local dev, but redirect in prod
+  console.warn("User not official. Using demo / fallback mode.");
+}
+const barangay = currentUser.barangay || "Santa Cruz";
 const officialBarangayEl = document.getElementById("officialBarangay");
-const mapEl = document.getElementById("map");
+if (officialBarangayEl) officialBarangayEl.textContent = barangay;
 
-let cachedReports = []; // array of { id, ...data }
-let selectedReport = null;
-let unsubscribe = null;
-
-/* ======= Helpers ======= */
+// --- small toast ---
 function toast(msg, color = "#1e5bb8") {
   const t = document.createElement("div");
   t.textContent = msg;
-  Object.assign(t.style, {
-    position: "fixed",
-    bottom: "20px",
-    right: "20px",
-    background: color,
-    color: "white",
-    padding: "10px 14px",
-    borderRadius: "8px",
-    boxShadow: "0 3px 8px rgba(0,0,0,0.25)",
-    zIndex: 9999,
-    opacity: "0",
-    transition: "opacity 0.3s"
-  });
+  Object.assign(t.style, { position: "fixed", bottom: "20px", right: "20px", background: color, color: "white", padding: "10px 14px", borderRadius: "8px", zIndex: 9999, opacity: 0, transition: "opacity 0.2s" });
   document.body.appendChild(t);
-  setTimeout(() => (t.style.opacity = "1"), 10);
-  setTimeout(() => {
-    t.style.opacity = "0";
-    setTimeout(() => t.remove(), 400);
-  }, 3000);
+  requestAnimationFrame(() => (t.style.opacity = 1));
+  setTimeout(() => { t.style.opacity = 0; setTimeout(() => t.remove(), 300); }, 2500);
 }
 
-function fmtTimestamp(ts) {
-  if (!ts) return "—";
-  // Firestore Timestamp ?
-  if (ts.seconds) return new Date(ts.seconds * 1000).toLocaleString();
-  // ISO string?
-  const d = new Date(ts);
-  if (!isNaN(d)) return d.toLocaleString();
-  return String(ts);
+// --- selected report ---
+let cachedReports = [];
+let selectedReport = null;
+
+// --- helpers ---
+function fmt(ts) {
+  try { return new Date(ts.seconds ? ts.seconds * 1000 : ts).toLocaleString(); } catch (e) { return new Date().toLocaleString(); }
 }
 
-function safeGetString(v) {
-  return (typeof v === "string" && v.trim() !== "") ? v : "—";
+function setMap(lat, lng) {
+  if (!lat && !lng) return removeMap();
+  if (marker) marker.setLatLng([lat, lng]);
+  else { marker = L.marker([lat, lng], { draggable: true }).addTo(map); marker.on('dragend', async () => { const p = marker.getLatLng(); latOut.textContent = p.lat.toFixed(6); lngOut.textContent = p.lng.toFixed(6); if (selectedReport) { await updateDoc(doc(db, 'reports', selectedReport.id), { lat: p.lat, lng: p.lng }); toast('Coordinates saved'); } }); }
+  map.setView([lat, lng], 16);
+  latOut.textContent = Number(lat).toFixed(6); lngOut.textContent = Number(lng).toFixed(6);
+}
+function removeMap() { if (marker) { map.removeLayer(marker); marker = null; } latOut.textContent = '—'; lngOut.textContent = '—'; }
+
+function renderList(reports) {
+  reportList.innerHTML = "";
+  if (!reports || reports.length === 0) {
+    reportList.innerHTML = '<li class="muted small">No reports found.</li>';
+    return;
+  }
+
+  reports.forEach(r => {
+    const li = document.createElement('li');
+    li.className = 'report-row';
+    li.dataset.id = r.id;
+    li.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <strong>${r.issueType || r.issue || 'Issue'}</strong>
+          <div class="small muted">${r.location || 'Unknown'}</div>
+        </div>
+        <div class="small">${r.status || 'Pending'}</div>
+      </div>`;
+
+    li.addEventListener('click', async () => {
+      document.querySelectorAll('#reportList li').forEach(x => x.classList.remove('selected'));
+      li.classList.add('selected');
+      await openReport(r.id);
+    });
+
+    reportList.appendChild(li);
+  });
 }
 
-/* ======= Auth + user check ======= */
-const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-if (!currentUser || currentUser.role !== "official") {
-  alert("Unauthorized access. Please login as an official.");
-  window.location.href = "index.html";
-}
-officialBarangayEl.textContent = currentUser.barangay || "—";
+async function openReport(id) {
+  try {
+    const ref = doc(db, 'reports', id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) { toast('Report not found', 'red'); return; }
+    selectedReport = { id: snap.id, ...snap.data() };
 
-if (!currentUser.barangay) {
-  statusIndicator.textContent = "⚠️ Your account has no barangay set. Showing local mode only.";
-  statusIndicator.style.color = "orange";
-  // fallback: render local reports (script.js provides local fallback)
+    detailTitle.textContent = selectedReport.issueType || selectedReport.issue || 'Report';
+    detailSub.textContent = `${selectedReport.barangay || ''} — ${selectedReport.location || ''}`;
+    detailIssue.textContent = selectedReport.issueType || selectedReport.issue || '—';
+    detailLocation.textContent = `${selectedReport.barangay || ''} • ${selectedReport.location || ''}`;
+    detailAuthor.textContent = selectedReport.author || selectedReport.name || 'Anonymous';
+    detailTimestamp.textContent = fmt(selectedReport.timestamp || selectedReport.createdAt || Date.now());
+    detailDesc.textContent = selectedReport.desc || selectedReport.description || 'No description provided';
+    detailStatus.textContent = selectedReport.status || 'Pending';
+
+    // timeline / proof media
+    proofGallery.innerHTML = '';
+    const urls = selectedReport.proofUrls || selectedReport.proofs || (selectedReport.imageUrl ? [selectedReport.imageUrl] : []);
+    if (urls.length === 0) proofGallery.innerHTML = '<div class="muted small">No media</div>';
+    else urls.forEach(u => { const d = document.createElement('div'); d.className = 'thumb'; if (/\.(mp4|webm|ogg)$/i.test(u) || u.includes('video')) { const v = document.createElement('video'); v.src = u; v.controls = true; d.appendChild(v); } else { const img = new Image(); img.src = u; d.appendChild(img); } proofGallery.appendChild(d); });
+
+    // map
+    const lat = selectedReport.lat ?? selectedReport.coords?.[0] ?? selectedReport.latitude;
+    const lng = selectedReport.lng ?? selectedReport.coords?.[1] ?? selectedReport.longitude;
+    if (lat != null && lng != null) setMap(lat, lng); else removeMap();
+
+    // status buttons
+    buildStatusButtons(selectedReport.status);
+  } catch (err) {
+    console.error('openReport error', err);
+    toast('Failed to open report', 'red');
+  }
 }
 
-/* ======= Render & UI actions ======= */
-function clearDetail() {
-  selectedReport = null;
-  detailTitle.textContent = "Select a report";
-  detailSub.textContent = "Click a report from the list to view details.";
-  detailIssue.textContent = "—";
-  detailLocation.textContent = "—";
-  detailAuthor.textContent = "—";
-  detailTimestamp.textContent = "—";
-  detailDesc.textContent = "—";
-  timelineEl.innerHTML = "";
-  proofGallery.innerHTML = "";
-  statusBar.innerHTML = "";
-  mapEl.textContent = "No coordinates";
-}
-
-function buildStatusButtons(report) {
-  statusBar.innerHTML = "";
-  const statuses = ["Pending", "In Progress", "Resolved", "Closed"];
+function buildStatusButtons(currentStatus) {
+  statusBar.innerHTML = '';
+  const statuses = ['Pending','In Progress','Resolved','Closed'];
   statuses.forEach(s => {
-    const b = document.createElement("button");
+    const b = document.createElement('button');
     b.textContent = s;
-    b.className = s === (report.status || "Pending") ? "btn" : "btn secondary";
-    if (s === report.status) {
-      b.disabled = true;
-      b.style.opacity = "0.85";
-    }
-    b.addEventListener("click", async () => {
-      try {
-        await updateDoc(doc(db, "reports", report.id), {
-          status: s,
-          lastUpdate: new Date().toISOString()
-        });
-        toast(`Status changed → ${s}`, "#1e5bb8");
-      } catch (err) {
-        console.error("Status update failed:", err);
-        toast("Failed to update status", "red");
-      }
+    b.className = 'btn';
+    if (s === currentStatus) { b.classList.add('secondary'); b.style.background = '#16a34a'; b.style.color = '#fff'; }
+    b.addEventListener('click', async () => {
+      if (!selectedReport) return toast('Open a report first', 'orange');
+      try { await updateDoc(doc(db, 'reports', selectedReport.id), { status: s }); toast(`Status updated: ${s}`, '#1e5bb8'); }
+      catch (e) { console.error(e); toast('Failed to update status','red'); }
     });
     statusBar.appendChild(b);
   });
 }
 
-function renderTimeline(report) {
-  timelineEl.innerHTML = "";
-  const history = report.history || [];
-  if (Array.isArray(history) && history.length) {
-    history.slice().reverse().forEach(h => {
-      const div = document.createElement("div");
-      div.className = "timeline-item";
-      const t = fmtTimestamp(h.ts || h.timestamp || h.time);
-      const text = h.text || h.msg || h.note || "";
-      div.innerHTML = `<div class="muted small">${t}</div><div>${text}</div>`;
-      timelineEl.appendChild(div);
-    });
-  } else if (report.lastMessage) {
-    const div = document.createElement("div");
-    div.className = "timeline-item";
-    div.innerHTML = `<div class="muted small">${fmtTimestamp(report.lastUpdate || report.updatedAt)}</div><div>${report.lastMessage}</div>`;
-    timelineEl.appendChild(div);
-  } else {
-    timelineEl.innerHTML = `<div class="muted small">No updates yet</div>`;
-  }
+// --- query builder ---
+function buildQuery() {
+  const base = [ where('barangay', '==', barangay) ];
+  const statusVal = (filterStatus && filterStatus.value) || 'All';
+  if (statusVal && statusVal !== 'All') base.push(where('status','==',statusVal));
+  // orderBy by timestamp (desc = latest)
+  const sortVal = (sortReports && sortReports.value) || 'latest';
+  return query(collection(db,'reports'), ...base, orderBy('timestamp', sortVal === 'latest' ? 'desc' : 'asc'));
 }
 
-function renderGallery(report) {
-  proofGallery.innerHTML = "";
-  const urls = report.proofUrls || report.proofs || (report.imageUrl ? [report.imageUrl] : []);
-  if (!Array.isArray(urls) || urls.length === 0) {
-    proofGallery.innerHTML = `<div class="muted small">No media</div>`;
-    return;
-  }
-  urls.forEach(u => {
-    const d = document.createElement("div"); d.className = "thumb";
-    if (/\.(mp4|webm|ogg)$/i.test(u) || u.includes("video")) {
-      const v = document.createElement("video"); v.src = u; v.controls = true; d.appendChild(v);
-    } else {
-      const img = new Image(); img.src = u; img.alt = "proof"; d.appendChild(img);
-    }
-    proofGallery.appendChild(d);
-  });
-}
+let unsubscribe = null;
 
-function setMap(report) {
-  mapEl.textContent = "No coordinates";
-  const lat = report.lat ?? (Array.isArray(report.coords) ? report.coords[0] : undefined);
-  const lng = report.lng ?? (Array.isArray(report.coords) ? report.coords[1] : undefined);
-  if (lat != null && lng != null) {
-    // simple link to google maps preview (keeps bundle small for presentation)
-    mapEl.innerHTML = `<a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">Open coordinates in Google Maps — ${lat.toFixed(6)}, ${lng.toFixed(6)}</a>`;
-  }
-}
+async function attachListener() {
+  // detach old
+  if (unsubscribe) unsubscribe();
 
-/* ======= List rendering ======= */
-function renderList(reportsArray) {
-  reportList.innerHTML = "";
-
-  // apply status filter client-side
-  const statusFilter = filterSelect?.value || "All";
-  const search = (searchInput?.value || "").trim().toLowerCase();
-  const sort = sortSelect?.value || "latest";
-
-  let list = reportsArray.slice(); // copy
-
-  // status filter
-  if (statusFilter !== "All") {
-    list = list.filter(r => (r.status || "Pending") === statusFilter);
-  }
-
-  // search filter
-  if (search) {
-    list = list.filter(r => {
-      const hay = `${r.issueType || r.issue || ""} ${r.location || ""} ${r.author || r.name || ""} ${r.desc || r.description || ""}`.toLowerCase();
-      return hay.includes(search);
-    });
-  }
-
-  // sort by timestamp (client-side)
-  list.sort((a, b) => {
-    const ta = a.timestamp ? (a.timestamp.seconds ? a.timestamp.seconds * 1000 : Date.parse(a.timestamp)) : 0;
-    const tb = b.timestamp ? (b.timestamp.seconds ? b.timestamp.seconds * 1000 : Date.parse(b.timestamp)) : 0;
-    return sort === "latest" ? tb - ta : ta - tb;
-  });
-
-  if (list.length === 0) {
-    const li = document.createElement("li");
-    li.textContent = "No reports match the current filters.";
-    li.style.textAlign = "center";
-    li.style.color = "#666";
-    reportList.appendChild(li);
-    clearDetail();
-    return;
-  }
-
-  list.forEach(r => {
-    const li = document.createElement("li");
-    li.dataset.id = r.id;
-    li.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <strong>${safeGetString(r.issueType || r.issue)}</strong>
-          <div class="muted small">${safeGetString(r.location)}</div>
-        </div>
-        <div style="text-align:right">
-          <div class="muted small">${safeGetString(r.status || "Pending")}</div>
-          <div class="muted small">${fmtTimestamp(r.timestamp)}</div>
-        </div>
-      </div>
-    `;
-    li.addEventListener("click", () => {
-      // mark selected UI
-      document.querySelectorAll("#reportList li").forEach(x => x.classList.remove("selected"));
-      li.classList.add("selected");
-      showDetail(r);
-    });
-    reportList.appendChild(li);
-  });
-}
-
-/* ======= Show detail for clicked report ======= */
-function showDetail(r) {
-  selectedReport = r;
-  detailTitle.textContent = r.issueType || r.issue || "Report";
-  detailSub.textContent = `${r.barangay || ""} — ${r.location || ""}`;
-  detailIssue.textContent = safeGetString(r.issueType || r.issue);
-  detailLocation.textContent = `${r.barangay || ""} • ${r.location || ""}`;
-  detailAuthor.textContent = r.author || r.name || "Anonymous";
-  detailTimestamp.textContent = fmtTimestamp(r.timestamp || r.createdAt);
-  detailDesc.textContent = r.desc || r.description || "No description provided";
-  buildStatusButtons(r);
-  renderTimeline(r);
-  renderGallery(r);
-  setMap(r);
-}
-
-/* ======= Firestore listener: only filter by barangay (server-side) and then client-side filters ======= */
-function attachLiveListener() {
-  if (!currentUser || !currentUser.barangay) {
-    // no barangay — fall back to local storage (script.js provides local fallback)
-    statusIndicator.textContent = "⚠️ No barangay assigned to account — local mode.";
-    statusIndicator.style.color = "orange";
-    const localReports = JSON.parse(localStorage.getItem("reports") || "[]");
-    cachedReports = localReports.map((r, i) => ({ id: r.id || `local-${i}`, ...r }));
+  try {
+    const q = buildQuery();
+    // initial fetch for cachedReports
+    const snap = await getDocs(q);
+    cachedReports = snap.docs.map(d=>({ id: d.id, ...d.data() }));
     renderList(cachedReports);
-    return;
+
+    // real-time
+    unsubscribe = onSnapshot(q, (snapshot) => {
+      cachedReports = snapshot.docs.map(d=>({ id: d.id, ...d.data() }));
+      renderList(cachedReports);
+      statusIndicator.textContent = '✅ Firestore Live Connected';
+      statusIndicator.style.color = '#16a34a';
+    }, (err) => {
+      console.error('listener error', err);
+      statusIndicator.textContent = '❌ Firestore Error — check console';
+      statusIndicator.style.color = 'red';
+    });
+  } catch (err) {
+    console.error('attachListener error', err);
+    statusIndicator.textContent = '⚠️ Failed to load (check console)';
+    statusIndicator.style.color = 'red';
   }
-
-  const reportsRef = collection(db, "reports");
-  const q = query(reportsRef, where("barangay", "==", currentUser.barangay));
-
-  // show connecting
-  statusIndicator.textContent = "Connecting to Firestore...";
-  statusIndicator.style.color = "#666";
-
-  // preload (getDocs) then realtime
-  (async () => {
-    try {
-      const snap = await getDocs(q);
-      cachedReports = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderList(cachedReports);
-      statusIndicator.textContent = "✅ Firestore initial load";
-      statusIndicator.style.color = "#16a34a";
-    } catch (err) {
-      console.error("Initial load error:", err);
-      statusIndicator.textContent = "⚠️ Initial Firestore load failed — check console";
-      statusIndicator.style.color = "orange";
-      // fallback to local
-      const localReports = JSON.parse(localStorage.getItem("reports") || "[]");
-      cachedReports = localReports.map((r, i) => ({ id: r.id || `local-${i}`, ...r }));
-      renderList(cachedReports);
-    }
-
-    // attach realtime (keeps only where on barangay — avoids composite-index requirement)
-    unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        cachedReports = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderList(cachedReports);
-        statusIndicator.textContent = "✅ Firestore Live Connected";
-        statusIndicator.style.color = "#16a34a";
-      },
-      (err) => {
-        console.error("Realtime onSnapshot error:", err);
-        statusIndicator.textContent = "❌ Firestore Error — check console";
-        statusIndicator.style.color = "red";
-      }
-    );
-  })();
 }
 
-/* ======= Wire UI controls ======= */
-filterSelect?.addEventListener("change", () => {
-  renderList(cachedReports);
-});
-sortSelect?.addEventListener("change", () => {
-  renderList(cachedReports);
-});
-searchInput?.addEventListener("input", () => {
-  renderList(cachedReports);
-});
-refreshBtn?.addEventListener("click", () => {
-  toast("Refreshing…");
-  // re-attach listener (will also call getDocs pre-load)
-  if (unsubscribe) unsubscribe();
-  attachLiveListener();
+// --- filters / search handlers ---
+if (filterStatus) filterStatus.addEventListener('change', attachListener);
+if (sortReports) sortReports.addEventListener('change', attachListener);
+if (searchInput) searchInput.addEventListener('input', (e) => {
+  const v = (e.target.value || '').toLowerCase();
+  const filtered = cachedReports.filter(r => (
+    (r.issueType||'').toLowerCase().includes(v) || (r.location||'').toLowerCase().includes(v) || (r.desc||r.description||'').toLowerCase().includes(v)
+  ));
+  renderList(filtered);
 });
 
-/* ======= expose small API for other scripts (optional) ======= */
-window.loadReports = async () => {
-  if (unsubscribe) unsubscribe();
-  attachLiveListener();
-};
+if (refreshBtn) refreshBtn.addEventListener('click', () => { toast('Refreshing…'); attachListener(); });
 
-/* ======= initialize ======= */
-clearDetail();
-attachLiveListener();
+// --- init ---
+attachListener();
 
-/* ======= cleanup on unload ======= */
-window.addEventListener("beforeunload", () => {
-  if (unsubscribe) unsubscribe();
-});
+// expose small helpers for dev console
+window._cachedReports = cachedReports;
+window.openReportById = openReport;
