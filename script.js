@@ -1,10 +1,15 @@
+// ======================================================
+// BarangayConnect | Unified Auth + Local Fallback System
+// ======================================================
+
 // === Default Accounts (with barangays) ===
 const defaultUsers = [
   { email: "official@barangay.gov", password: "official123", role: "official", name: "Brgy. Official", barangay: "Santa Cruz" },
   { email: "resident1@gmail.com", password: "resident123", role: "resident", name: "Resident One", barangay: "Santa Cruz" },
   { email: "resident2@gmail.com", password: "resident123", role: "resident", name: "Resident Two", barangay: "Santa Cruz" },
   { email: "brgycpt@gmail.com", password: "captain123", role: "captain", name: "Captain", barangay: "Santa Cruz" },
-  { email: "lgu@province.gov", password: "lgu123", role: "lgu", name: "Provincial LGU Officer" }
+  { email: "lgu@province.gov", password: "lgu123", role: "lgu", name: "Provincial LGU Officer" },
+  { email: "staff@barangay.gov", password: "staff123", role: "staff", name: "Barangay Staff", barangay: "Santa Cruz" }
 ];
 
 // === Merge Default + Existing Users ===
@@ -18,48 +23,71 @@ localStorage.setItem("users", JSON.stringify(storedUsers));
 
 const users = JSON.parse(localStorage.getItem("users")) || [];
 
-// === Handle Login ===
+// ======================================================
+// LOGIN HANDLER
+// ======================================================
 const loginForm = document.getElementById("loginForm");
 if (loginForm) {
   loginForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const email = document.getElementById("loginEmail").value.trim();
     const password = document.getElementById("loginPassword").value.trim();
-    const user = users.find(u => u.email === email && u.password === password);
     const msg = document.getElementById("loginMessage");
+
+    const user = users.find(u => u.email === email && u.password === password);
 
     if (user) {
       localStorage.setItem("currentUser", JSON.stringify(user));
       msg.textContent = "Login successful!";
+      msg.style.color = "green";
+
       setTimeout(() => {
-        if (user.role === "official") window.location.href = "official.html";
-        else if (user.role === "resident") window.location.href = "resident.html";
-        else if (user.role === "lgu") window.location.href = "lgu.html";
-        else if (user.role === "captain") window.location.href = "staff.html";
-        else msg.textContent = "Unknown role. Please contact admin.";
+        switch (user.role) {
+          case "official":
+            window.location.href = "official.html";
+            break;
+          case "resident":
+            window.location.href = "resident.html";
+            break;
+          case "lgu":
+            window.location.href = "lgu.html";
+            break;
+          case "captain":
+          case "staff":
+            window.location.href = "staff.html";
+            break;
+          default:
+            msg.textContent = "Unknown role. Please contact admin.";
+            msg.style.color = "red";
+        }
       }, 800);
     } else {
       msg.textContent = "Invalid credentials. Please try again.";
+      msg.style.color = "red";
     }
   });
 }
 
-// === Handle Registration ===
+// ======================================================
+// REGISTRATION HANDLER
+// ======================================================
 const registerForm = document.getElementById("registerForm");
 if (registerForm) {
   registerForm.addEventListener("submit", (e) => {
     e.preventDefault();
+
     const name = document.getElementById("registerName").value.trim();
     const email = document.getElementById("registerEmail").value.trim();
     const password = document.getElementById("registerPassword").value.trim();
     const role = document.getElementById("registerRole").value;
-    const barangay = document.getElementById("registerBarangay")?.value || "Santa Cruz"; // Default fallback
-
+    const barangay = document.getElementById("registerBarangay")?.value || "Santa Cruz";
     const msg = document.getElementById("registerMessage");
+
     let users = JSON.parse(localStorage.getItem("users")) || [];
 
     if (users.some(u => u.email === email)) {
       msg.textContent = "Email already registered.";
+      msg.style.color = "red";
       return;
     }
 
@@ -68,11 +96,15 @@ if (registerForm) {
     localStorage.setItem("users", JSON.stringify(users));
 
     msg.textContent = "Registration successful!";
+    msg.style.color = "green";
+
     setTimeout(() => (window.location.href = "index.html"), 1000);
   });
 }
 
-// === Handle Logout (Global) ===
+// ======================================================
+// LOGOUT HANDLER (GLOBAL)
+// ======================================================
 const logoutBtn = document.getElementById("logoutBtn");
 if (logoutBtn) {
   logoutBtn.addEventListener("click", () => {
@@ -81,14 +113,17 @@ if (logoutBtn) {
   });
 }
 
-// === Local Reports (Fallback Only) ===
+// ======================================================
+// LOCAL REPORT FALLBACK (if Firestore fails)
+// ======================================================
 const reportList = document.getElementById("reportList");
 if (reportList) {
   try {
-    // Only run this if Firestore isn't already updating the list
+    // Only show if Firestore isn't syncing yet
     if (!window.firestoreActive) {
       const reports = JSON.parse(localStorage.getItem("reports")) || [];
 
+      reportList.innerHTML = "";
       if (reports.length === 0) {
         const li = document.createElement("li");
         li.textContent = "No reports found (local mode).";
