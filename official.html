@@ -6,131 +6,116 @@
   <title>BarangayConnect | Official Dashboard</title>
   <link rel="stylesheet" href="style.css">
   <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f7f9fc;
+      margin: 0;
+      padding: 0;
+    }
+    header.navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0052cc;
+      color: white;
+      padding: 10px 20px;
+    }
     .report-card {
-      background: #f9f9f9;
-      border-radius: 10px;
-      margin: 10px 0;
+      background: white;
+      border-radius: 12px;
+      margin: 12px 0;
       padding: 15px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
     .report-card img {
-      max-width: 140px;
-      border-radius: 8px;
-      display: block;
-      margin-top: 8px;
+      max-width: 160px;
+      border-radius: 10px;
+      margin-top: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .report-card img:hover {
+      transform: scale(1.05);
     }
     .status-btn {
       padding: 6px 12px;
       border: none;
       border-radius: 6px;
-      margin-top: 8px;
       cursor: pointer;
       font-weight: bold;
+      margin-top: 10px;
     }
-    .status-pending { background: #ffcc00; }
+    .status-pending { background: #ffcc00; color: #000; }
     .status-resolved { background: #4CAF50; color: white; }
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    select {
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 8px;
+    }
   </style>
 </head>
+
 <body>
   <header class="navbar">
-    <img src="logo.png" alt="Barangay Logo" class="logo">
+    <img src="logo.png" alt="Barangay Logo" class="logo" height="50">
     <h1>BarangayConnect — Official Dashboard</h1>
     <nav>
       <a href="official.html" class="active">Reports</a>
-      <a href="index.html" id="logoutBtn">Logout</a>
+      <a href="index.html" id="logoutBtn" style="color:white;">Logout</a>
     </nav>
   </header>
 
-  <main class="container">
+  <main class="container" style="padding: 20px;">
     <h2>Incoming Resident Reports</h2>
+
+    <div class="filters">
+      <select id="statusFilter">
+        <option value="All">All Statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="Resolved">Resolved</option>
+      </select>
+      <select id="issueFilter">
+        <option value="All">All Issue Types</option>
+        <option value="Garbage">Garbage</option>
+        <option value="Road Damage">Road Damage</option>
+        <option value="Flooding">Flooding</option>
+        <option value="Crime">Crime</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
     <div id="reportsContainer"></div>
   </main>
 
   <footer><small>&copy; 2025 BarangayConnect</small></footer>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, updateDoc, doc } 
-      from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+  <div id="imageModal" class="modal">
+    <img id="modalImg" src="" alt="Preview">
+  </div>
 
-    // === Firebase Config ===
-    const firebaseConfig = {
-      apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
-      authDomain: "iss-bc.firebaseapp.com",
-      projectId: "iss-bc",
-      storageBucket: "iss-bc.firebasestorage.app",
-      messagingSenderId: "455122393981",
-      appId: "1:455122393981:web:bdf281da744767c0064a14"
-    };
-
-    // === Initialize Firebase ===
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // === Load Reports ===
-    async function loadReports() {
-      const container = document.getElementById("reportsContainer");
-      container.innerHTML = "<p>Loading reports...</p>";
-
-      const querySnapshot = await getDocs(collection(db, "reports"));
-      container.innerHTML = "";
-
-      if (querySnapshot.empty) {
-        container.innerHTML = "<p>No reports available yet.</p>";
-        return;
-      }
-
-      querySnapshot.forEach((docSnap) => {
-        const report = docSnap.data();
-        const reportDiv = document.createElement("div");
-        reportDiv.className = "report-card";
-
-        // ✅ Flexible image handling (Base64 or URL)
-        const imgHTML =
-          report.imageBase64
-            ? `<img src="${report.imageBase64}" alt="Proof Image">`
-            : report.imageData
-              ? `<img src="${report.imageData}" alt="Proof Image">`
-              : report.imageUrl
-                ? `<img src="${report.imageUrl}" alt="Proof Image">`
-                : '<small>No image provided</small>';
-
-        // === Report display structure ===
-        reportDiv.innerHTML = `
-          <strong>${report.issueType || 'Unknown Issue'}</strong> — 
-          ${report.barangay || 'Unknown Barangay'}, ${report.location || 'Unknown Location'}<br>
-          <em>${report.desc || report.description || 'No description provided.'}</em><br>
-          <small>Author: ${report.author || 'Unknown'}</small><br>
-          <small>Status: ${report.status || 'Pending'}</small><br>
-          ${imgHTML}
-          <br>
-          <button class="status-btn ${report.status === 'Resolved' ? 'status-resolved' : 'status-pending'}"
-            data-id="${docSnap.id}">
-            ${report.status === 'Resolved' ? 'Resolved' : 'Mark as Resolved'}
-          </button>
-        `;
-
-        container.appendChild(reportDiv);
-      });
-
-      // === Status update handler ===
-      document.querySelectorAll(".status-btn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const id = btn.getAttribute("data-id");
-          await updateDoc(doc(db, "reports", id), { status: "Resolved" });
-          alert("Report marked as resolved!");
-          loadReports();
-        });
-      });
-    }
-
-    document.addEventListener("DOMContentLoaded", loadReports);
-
-    // === Logout ===
-    document.getElementById("logoutBtn").addEventListener("click", () => {
-      localStorage.removeItem("currentUser");
-      window.location.href = "index.html";
-    });
-  </script>
+  <script type="module" src="official.js"></script>
+  <script type="module" src="official-sync.js"></script>
 </body>
 </html>
