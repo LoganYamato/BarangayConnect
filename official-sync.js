@@ -1,18 +1,22 @@
 // ======================================================
-// BarangayConnect | Official Dashboard Firestore Sync
+// BarangayConnect | Official Dashboard Firebase Sync (Safe Build)
+// Compatible with resident.html + official.js
 // ======================================================
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+// Use the same SDK version and pattern as resident-sync.js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { 
   getFirestore, 
   collection, 
   getDocs, 
   query, 
+  where, 
   orderBy 
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // ======================================================
-// Firebase Config (same as resident-sync.js)
+// Firebase Config (same as resident)
 // ======================================================
 const firebaseConfig = {
   apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
@@ -29,87 +33,25 @@ const firebaseConfig = {
 // ======================================================
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 // ======================================================
-// DOM Elements
+// Make Firestore & Auth globally available
 // ======================================================
-const reportList = document.getElementById("reportReviewList");
-const refreshBtn = document.getElementById("refreshBtn");
-const statusMsg = document.getElementById("statusMessage");
+window.app = app;
+window.db = db;
+window.auth = auth;
 
 // ======================================================
-// Load Reports from Firestore
+// Optional Test Load (for debugging only)
 // ======================================================
-async function loadReports() {
-  if (!reportList) return;
-
-  reportList.innerHTML = "<li>Loading reports...</li>";
-  
+// This helps confirm that official.html can “see” reports like resident.html.
+(async () => {
   try {
     const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
     const snapshot = await getDocs(q);
-
-    reportList.innerHTML = ""; // clear placeholder
-
-    if (snapshot.empty) {
-      reportList.innerHTML = "<li>No reports available yet.</li>";
-      return;
-    }
-
-    snapshot.forEach((doc) => {
-      const r = doc.data();
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <strong>${r.issueType || "Unknown Issue"}</strong><br>
-        📍 ${r.location || "No location"}<br>
-        🧑‍💼 Reported by: ${r.author || "Anonymous"}<br>
-        📝 ${r.description || ""}<br>
-        <small>Status: ${r.status || "Pending"}</small>
-      `;
-      li.style.marginBottom = "10px";
-      li.style.padding = "8px";
-      li.style.border = "1px solid #ccc";
-      li.style.borderRadius = "8px";
-      li.style.backgroundColor = "#f9f9f9";
-      reportList.appendChild(li);
-    });
-
-    if (statusMsg) {
-      statusMsg.textContent = "✅ Reports updated successfully!";
-      statusMsg.style.color = "green";
-    }
-
+    console.log(`✅ [Official-Sync] Found ${snapshot.size} reports in Firestore`);
   } catch (err) {
-    console.error("Error loading reports:", err);
-    reportList.innerHTML = "<li>❌ Failed to load reports.</li>";
-    if (statusMsg) {
-      statusMsg.textContent = "⚠️ Error loading reports.";
-      statusMsg.style.color = "red";
-    }
+    console.error("❌ [Official-Sync] Firestore test failed:", err);
   }
-}
-
-// ======================================================
-// Manual Refresh
-// ======================================================
-if (refreshBtn) {
-  refreshBtn.addEventListener("click", () => {
-    loadReports();
-  });
-}
-
-// ======================================================
-// Initial Load
-// ======================================================
-loadReports();
-
-// ======================================================
-// Logout (optional, matches your main script.js)
-// ======================================================
-const logoutBtn = document.getElementById("logoutBtn");
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", () => {
-    localStorage.removeItem("currentUser");
-    window.location.href = "index.html";
-  });
-}
+})();
