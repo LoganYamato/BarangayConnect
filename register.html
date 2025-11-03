@@ -19,13 +19,22 @@
         <input type="text" id="registerName" placeholder="Full Name" required>
         <input type="email" id="registerEmail" placeholder="Email" required>
         <input type="password" id="registerPassword" placeholder="Password" required>
-        
-        <!-- ✅ Added LGU role option -->
+
         <select id="registerRole" required>
           <option value="">Select Role</option>
           <option value="resident">Resident</option>
-          <option value="official">Official</option>
+          <option value="official">Barangay Official</option>
           <option value="lgu">LGU</option>
+        </select>
+
+        <!-- ✅ Added Barangay Selection -->
+        <select id="registerBarangay" required>
+          <option value="">Select Barangay</option>
+          <option value="Santa Cruz">Santa Cruz</option>
+          <option value="San Isidro">San Isidro</option>
+          <option value="Mabini">Mabini</option>
+          <option value="Del Pilar">Del Pilar</option>
+          <option value="Poblacion">Poblacion</option>
         </select>
 
         <button type="submit">Register</button>
