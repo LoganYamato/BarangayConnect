@@ -37,36 +37,32 @@ if (loginForm) {
     const user = users.find(u => u.email === email && u.password === password);
 
     if (user) {
-      localStorage.setItem("currentUser", JSON.stringify(user));
-      msg.textContent = "Login successful!";
-      msg.style.color = "green";
+  localStorage.setItem("currentUser", JSON.stringify(user));
+  msg.textContent = "Login successful!";
 
-      setTimeout(() => {
-        switch (user.role) {
-          case "official":
-            window.location.href = "official.html";
-            break;
-          case "resident":
-            window.location.href = "resident.html";
-            break;
-          case "lgu":
-            window.location.href = "lgu.html";
-            break;
-          case "captain":
-          case "staff":
-            window.location.href = "staff.html";
-            break;
-          default:
-            msg.textContent = "Unknown role. Please contact admin.";
-            msg.style.color = "red";
-        }
-      }, 800);
-    } else {
-      msg.textContent = "Invalid credentials. Please try again.";
-      msg.style.color = "red";
+  setTimeout(() => {
+    switch (user.role) {
+      case "official":
+        window.location.href = "official.html";
+        break;
+      case "resident":
+        window.location.href = "resident.html";
+        break;
+      case "lgu":
+        window.location.href = "lgu.html";
+        break;
+      case "captain":
+        window.location.href = "staff.html";
+        break;
+      default:
+        // 🔹 fallback: send to index and warn in console
+        console.warn("Unknown role:", user.role);
+        alert("Unrecognized role — redirecting to homepage.");
+        window.location.href = "index.html";
     }
-  });
+  }, 800);
 }
+
 
 // ======================================================
 // REGISTRATION HANDLER
