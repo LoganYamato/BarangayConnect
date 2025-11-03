@@ -5,29 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Barangay Official Dashboard</title>
   <link rel="stylesheet" href="style.css" />
-
-  <!-- Firebase SDK -->
-  <script type="module">
-    // Import Firebase SDK
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyB6Y_izKH1MEZVQlujYHjI4r9fhOdYKWZ0",
-      authDomain: "iss-bc.firebaseapp.com",
-      projectId: "iss-bc",
-      storageBucket: "iss-bc.firebasestorage.app",
-      messagingSenderId: "455122393981",
-      appId: "1:455122393981:web:bdf281da744767c0064a14",
-      measurementId: "G-6VQLV0PG81"
-    };
-
-    // Initialize Firebase globally
-    const app = initializeApp(firebaseConfig);
-    window.db = getFirestore(app);
-    window.auth = getAuth(app);
-  </script>
 </head>
 
 <body>
@@ -68,7 +45,8 @@
     <p>&copy; 2025 BarangayConnect</p>
   </footer>
 
-  <!-- Link script -->
+  <!-- Link scripts -->
+  <script type="module" src="official-sync.js"></script>
   <script type="module" src="official.js"></script>
 </body>
 </html>
