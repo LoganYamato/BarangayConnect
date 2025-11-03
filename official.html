@@ -1,115 +1,130 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Official Dashboard — BarangayConnect</title>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BarangayConnect | Official Dashboard</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    :root{--blue:#1e5bb8;--green:#16a34a;--muted:#f4f6fb;--card:#fff;--text:#0f172a}
-    body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--muted);color:var(--text)}
-    header{background:linear-gradient(90deg,var(--blue),#174a95);color:white;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .logo{width:36px;height:36px;object-fit:contain}
-    main{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px;max-width:1200px;margin:18px auto}
-    @media (max-width:900px){main{grid-template-columns:1fr;padding:12px}}
-    .panel{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
-    .filter-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
-    .filter-row select, .filter-row input{padding:8px;border-radius:8px;border:1px solid #e6eefc}
-    #reportList{list-style:none;margin:0;padding:0;max-height:72vh;overflow:auto}
-    #reportList li{padding:12px;border-radius:8px;margin-bottom:8px;border:1px solid #eef3ff;cursor:pointer}
-    #reportList li:hover{background:#f8fbff}
-    #reportList li.selected{background:#e6f6ee;border-left:4px solid var(--blue);font-weight:600}
-    .small{font-size:13px;color:#516179}
-    .muted{color:#6b7280;font-size:13px}
-    .detail-grid{display:flex;flex-direction:column;gap:12px}
-    .kv{display:grid;grid-template-columns:140px 1fr;gap:8px;padding:10px 0}
-    .pill{padding:6px 8px;border-radius:999px;border:1px solid #e6eefc;background:#fff;display:inline-block}
-    .btn{background:var(--blue);color:white;border:0;padding:10px 12px;border-radius:8px;cursor:pointer}
-    .btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--blue)}
-    .status-buttons{display:flex;gap:8px;flex-wrap:wrap}
-    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
-    .thumb img{width:100%;height:100%;object-fit:cover;border-radius:6px}
+    .report-card {
+      background: #f9f9f9;
+      border-radius: 10px;
+      margin: 10px 0;
+      padding: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .report-card img {
+      max-width: 140px;
+      border-radius: 8px;
+      display: block;
+      margin-top: 8px;
+    }
+    .status-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      margin-top: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .status-pending { background: #ffcc00; }
+    .status-resolved { background: #4CAF50; color: white; }
   </style>
 </head>
-
 <body>
-<header>
-  <div style="display:flex;gap:12px;align-items:center">
-    <img src="logo.png" class="logo" alt="Logo">
-    <div>
-      <h1 style="margin:0;font-size:18px">BarangayConnect — Official Dashboard</h1>
-      <div class="muted small">Barangay — <span id="officialBarangay">—</span></div>
-    </div>
-  </div>
+  <header class="navbar">
+    <img src="logo.png" alt="Barangay Logo" class="logo">
+    <h1>BarangayConnect — Official Dashboard</h1>
+    <nav>
+      <a href="official.html" class="active">Reports</a>
+      <a href="index.html" id="logoutBtn">Logout</a>
+    </nav>
+  </header>
 
-  <div>
-    <button id="logoutBtn" class="btn">Logout</button>
-  </div>
-</header>
+  <main class="container">
+    <h2>Incoming Resident Reports</h2>
+    <div id="reportsContainer"></div>
+  </main>
 
-<main>
-  <aside class="panel">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <h3 style="margin:0">Reports</h3>
-      <div class="muted small">Live / Firestore</div>
-    </div>
+  <footer><small>&copy; 2025 BarangayConnect</small></footer>
 
-    <div class="filter-row">
-      <select id="filterStatus" title="Filter by status">
-        <option value="All">All statuses</option>
-        <option value="Pending">Pending</option>
-        <option value="In Progress">In Progress</option>
-        <option value="Resolved">Resolved</option>
-      </select>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, updateDoc, doc } 
+      from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-      <select id="sortReports" title="Sort by time">
-        <option value="latest">Latest first</option>
-        <option value="oldest">Oldest first</option>
-      </select>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
+      authDomain: "iss-bc.firebaseapp.com",
+      projectId: "iss-bc",
+      storageBucket: "iss-bc.firebasestorage.app",
+      messagingSenderId: "455122393981",
+      appId: "1:455122393981:web:bdf281da744767c0064a14"
+    };
 
-      <input id="searchInput" placeholder="Search issue / street / author" style="flex:1" />
-      <button id="refreshBtn" class="btn secondary">⟳</button>
-    </div>
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-    <div id="statusIndicator" class="small" style="text-align:center;margin:6px 0;color:#16a34a">
-      Connecting to Firestore...
-    </div>
+    // Load reports
+    async function loadReports() {
+      const container = document.getElementById("reportsContainer");
+      container.innerHTML = "<p>Loading reports...</p>";
 
-    <ul id="reportList" aria-live="polite"></ul>
-  </aside>
+      const querySnapshot = await getDocs(collection(db, "reports"));
+      container.innerHTML = "";
 
-  <section class="panel detail-grid">
-    <div>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <h2 id="detailTitle" style="margin:0">Select a report</h2>
-          <div id="detailSub" class="muted small">Click a report from the list to view details.</div>
-        </div>
-        <div><span class="pill" id="detailStatus">—</span></div>
-      </div>
+      if (querySnapshot.empty) {
+        container.innerHTML = "<p>No reports available yet.</p>";
+        return;
+      }
 
-      <div class="kv" style="margin-top:12px">
-        <div class="small">Issue Type</div><div id="detailIssue">—</div>
-        <div class="small">Location</div><div id="detailLocation">—</div>
-        <div class="small">Reported By</div><div id="detailAuthor">—</div>
-        <div class="small">Submitted</div><div id="detailTimestamp">—</div>
-        <div class="small">Description</div><div id="detailDesc">—</div>
-      </div>
-    </div>
+      querySnapshot.forEach((docSnap) => {
+        const report = docSnap.data();
+        const reportDiv = document.createElement("div");
+        reportDiv.className = "report-card";
 
-    <div>
-      <h4 style="margin:6px 0">Change status</h4>
-      <div class="status-buttons" id="statusBar"></div>
-    </div>
+        const imgHTML = report.imageData 
+          ? `<img src="${report.imageData}" alt="Proof Image">`
+          : report.imageUrl 
+            ? `<img src="${report.imageUrl}" alt="Proof Image">`
+            : "";
 
-    <div>
-      <h4 style="margin:6px 0">Proof media</h4>
-      <div class="gallery" id="proofGallery"></div>
-    </div>
-  </section>
-</main>
+        reportDiv.innerHTML = `
+          <strong>${report.issueType}</strong> — ${report.barangay || ''}, ${report.location || ''}<br>
+          <em>${report.desc || report.description || ''}</em><br>
+          <small>Author: ${report.author || 'Unknown'}</small><br>
+          <small>Status: ${report.status || 'Pending'}</small><br>
+          ${imgHTML}
+          <br>
+          <button class="status-btn ${report.status === 'Resolved' ? 'status-resolved' : 'status-pending'}"
+            data-id="${docSnap.id}">
+            ${report.status === 'Resolved' ? 'Resolved' : 'Mark as Resolved'}
+          </button>
+        `;
 
-<script type="module" src="official.js"></script>
+        container.appendChild(reportDiv);
+      });
+
+      // Status update
+      document.querySelectorAll(".status-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const id = btn.getAttribute("data-id");
+          await updateDoc(doc(db, "reports", id), { status: "Resolved" });
+          alert("Report marked as resolved!");
+          loadReports();
+        });
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", loadReports);
+
+    // Logout
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("currentUser");
+      window.location.href = "index.html";
+    });
+  </script>
 </body>
 </html>
