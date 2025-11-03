@@ -6,6 +6,16 @@
     <title>Staff Role Management | BarangayConnect</title>
     <link rel="stylesheet" href="style.css" />
     <style>
+        /* --- Custom Header Styling for White Links (no underline on hover) --- */
+        .navbar a {
+            color: white !important; /* Force links to be white */
+            text-decoration: none; /* Ensure no unwanted underlines by default */
+        }
+        .navbar a:hover, .navbar a.active {
+            text-decoration: none; /* Explicitly remove underline on hover and for active link */
+        }
+        /* ----------------------------------------------------------------- */
+        
         /* Styles adapted from report.html and enhanced for table display */
         .container h2 { padding-top: 5%; }
         .staff-table {
@@ -30,11 +40,11 @@
             padding: 8px;
             border-radius: 5px;
             border: 1px solid #ccc;
-            width: 100%; /* Make dropdown wide */
+            width: 100%;
             box-sizing: border-box;
         }
         .save-btn {
-            background-color: #007bff; /* Blue for action */
+            background-color: #007bff;
             color: white;
             border: none;
             padding: 8px 15px;
@@ -49,7 +59,6 @@
         .save-btn:hover {
             background-color: #0056b3;
         }
-        /* Custom styles for role management list */
         .role-description-list {
             list-style: disc;
             margin-left: 20px;
@@ -65,15 +74,17 @@
         <img src="logo.png" alt="Barangay Logo" class="logo">
         <h1>BarangayConnect - Admin</h1>
         <nav>
-            <a href="admin_dashboard.html">Admin Dashboard</a>
-            <a href="reports_queue.html">Reports Queue</a>
-            <a href="roles.html" class="active">Staff Roles</a> 
+            <b>|</b>
+            <a href="resident.html">Official Dashboard</a>
+            <b>|</b>
+            <a href="report.html">Reports</a>
+            <b>|</b>
             <button id="logoutBtn" class="logout">Logout</button>
         </nav>
     </header>
 
     <main class="container">
-        <h2>🛠️ Staff and Role Assignment</h2>
+        <h2>Staff and Role Assignment</h2>
         
         <p>This page allows the Barangay Captain to assign operational roles to all staff and volunteers.</p>
 
