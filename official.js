@@ -4,9 +4,10 @@ import {
   where,
   getDocs,
   updateDoc,
-  doc
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  doc,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
 const db = window.db;
 const auth = window.auth;
@@ -16,24 +17,28 @@ const filterStatus = document.getElementById("filterStatus");
 const refreshBtn = document.getElementById("refreshBtn");
 const detailDiv = document.getElementById("reportDetail");
 
-// === Utility: Render Details ===
+// === Utility: Show Report Details ===
 function showDetail(report, id) {
   detailDiv.innerHTML = `
     <h3>${report.issueType}</h3>
     <p><strong>Location:</strong> ${report.location}</p>
-    <p><strong>Description:</strong> ${report.desc || "No description"}</p>
+    <p><strong>Description:</strong> ${report.description || report.desc || "No description"}</p>
     <p><strong>Status:</strong> ${report.status}</p>
     <p><strong>Reported by:</strong> ${report.author || "Unknown"}</p>
-    <p><strong>Barangay:</strong> ${report.barangay}</p>
+    <p><strong>Barangay:</strong> ${report.barangay || "N/A"}</p>
     <button id="markPending">Mark Pending</button>
     <button id="markInProgress">Mark In Progress</button>
     <button id="markResolved">Mark Resolved</button>
   `;
 
   const updateStatus = async (newStatus) => {
-    await updateDoc(doc(db, "reports", id), { status: newStatus });
-    alert(`Status updated to ${newStatus}`);
-    loadReports(); // Refresh list
+    try {
+      await updateDoc(doc(db, "reports", id), { status: newStatus });
+      alert(`Status updated to ${newStatus}`);
+      loadReports();
+    } catch (err) {
+      alert("Error updating status: " + err.message);
+    }
   };
 
   document.getElementById("markPending").onclick = () => updateStatus("Pending");
@@ -41,7 +46,7 @@ function showDetail(report, id) {
   document.getElementById("markResolved").onclick = () => updateStatus("Resolved");
 }
 
-// === Core Loader ===
+// === Load Reports from Firestore ===
 async function loadReports() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   if (!currentUser || !currentUser.barangay) {
@@ -51,59 +56,57 @@ async function loadReports() {
 
   reportList.innerHTML = "<li>Loading reports...</li>";
 
-  const selectedStatus = filterStatus.value;
-  let q = query(collection(db, "reports"), where("barangay", "==", currentUser.barangay));
+  try {
+    const selectedStatus = filterStatus.value;
+    const q = query(
+      collection(db, "reports"),
+      where("barangay", "==", currentUser.barangay),
+      orderBy("timestamp", "desc")
+    );
 
-  const snapshot = await getDocs(q);
-  const reports = [];
-  snapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    reports.push({ id: docSnap.id, ...data });
-  });
+    const snapshot = await getDocs(q);
+    const reports = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
-  // Apply status filter locally
-  const filtered = selectedStatus === "All"
-    ? reports
-    : reports.filter(r => r.status === selectedStatus);
+    // Apply filter
+    const filtered = selectedStatus === "All"
+      ? reports
+      : reports.filter(r => r.status === selectedStatus);
 
-  // Render list
-  reportList.innerHTML = "";
-  if (filtered.length === 0) {
-    reportList.innerHTML = "<li>No reports found.</li>";
-  } else {
-    filtered.forEach(r => {
-      const li = document.createElement("li");
-      li.textContent = `${r.issueType} — ${r.location} (${r.status})`;
-      li.style.cursor = "pointer";
-      li.onclick = () => showDetail(r, r.id);
-      reportList.appendChild(li);
-    });
+    reportList.innerHTML = "";
+    if (filtered.length === 0) {
+      reportList.innerHTML = "<li>No reports found.</li>";
+    } else {
+      filtered.forEach(r => {
+        const li = document.createElement("li");
+        li.textContent = `${r.issueType} — ${r.location} (${r.status})`;
+        li.style.cursor = "pointer";
+        li.onclick = () => showDetail(r, r.id);
+        reportList.appendChild(li);
+      });
+    }
+
+  } catch (err) {
+    console.error("Error loading reports:", err);
+    reportList.innerHTML = "<li>⚠️ Failed to load reports.</li>";
   }
 }
 
-// === Listeners ===
+// === Event Listeners ===
 filterStatus.addEventListener("change", loadReports);
 refreshBtn.addEventListener("click", loadReports);
 
-const logoutBtn = document.getElementById("logoutBtn");
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", () => {
-    localStorage.removeItem("currentUser");
-    window.location.href = "index.html";
-  });
-}
+// === Logout Button ===
+document.getElementById("logoutBtn")?.addEventListener("click", () => {
+  localStorage.removeItem("currentUser");
+  window.location.href = "index.html";
+});
 
-// === Authentication Watcher ===
+// === Auth Watcher ===
 onAuthStateChanged(auth, (user) => {
-  if (user) {
-    loadReports();
-  } else {
-    // If no Firebase auth, still fallback to localStorage login
+  if (user) loadReports();
+  else {
     const localUser = JSON.parse(localStorage.getItem("currentUser"));
-    if (localUser && localUser.role === "official") {
-      loadReports();
-    } else {
-      window.location.href = "index.html";
-    }
+    if (localUser?.role === "official") loadReports();
+    else window.location.href = "index.html";
   }
 });
