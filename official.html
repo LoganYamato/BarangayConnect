@@ -53,7 +53,7 @@
     import { getFirestore, collection, getDocs, updateDoc, doc } 
       from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-    // Firebase Config
+    // === Firebase Config ===
     const firebaseConfig = {
       apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
       authDomain: "iss-bc.firebaseapp.com",
@@ -63,11 +63,11 @@
       appId: "1:455122393981:web:bdf281da744767c0064a14"
     };
 
-    // Initialize Firebase
+    // === Initialize Firebase ===
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Load reports
+    // === Load Reports ===
     async function loadReports() {
       const container = document.getElementById("reportsContainer");
       container.innerHTML = "<p>Loading reports...</p>";
@@ -85,15 +85,21 @@
         const reportDiv = document.createElement("div");
         reportDiv.className = "report-card";
 
-        const imgHTML = report.imageData 
-          ? `<img src="${report.imageData}" alt="Proof Image">`
-          : report.imageUrl 
-            ? `<img src="${report.imageUrl}" alt="Proof Image">`
-            : "";
+        // ✅ Flexible image handling (Base64 or URL)
+        const imgHTML =
+          report.imageBase64
+            ? `<img src="${report.imageBase64}" alt="Proof Image">`
+            : report.imageData
+              ? `<img src="${report.imageData}" alt="Proof Image">`
+              : report.imageUrl
+                ? `<img src="${report.imageUrl}" alt="Proof Image">`
+                : '<small>No image provided</small>';
 
+        // === Report display structure ===
         reportDiv.innerHTML = `
-          <strong>${report.issueType}</strong> — ${report.barangay || ''}, ${report.location || ''}<br>
-          <em>${report.desc || report.description || ''}</em><br>
+          <strong>${report.issueType || 'Unknown Issue'}</strong> — 
+          ${report.barangay || 'Unknown Barangay'}, ${report.location || 'Unknown Location'}<br>
+          <em>${report.desc || report.description || 'No description provided.'}</em><br>
           <small>Author: ${report.author || 'Unknown'}</small><br>
           <small>Status: ${report.status || 'Pending'}</small><br>
           ${imgHTML}
@@ -107,7 +113,7 @@
         container.appendChild(reportDiv);
       });
 
-      // Status update
+      // === Status update handler ===
       document.querySelectorAll(".status-btn").forEach((btn) => {
         btn.addEventListener("click", async () => {
           const id = btn.getAttribute("data-id");
@@ -120,7 +126,7 @@
 
     document.addEventListener("DOMContentLoaded", loadReports);
 
-    // Logout
+    // === Logout ===
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("currentUser");
       window.location.href = "index.html";
