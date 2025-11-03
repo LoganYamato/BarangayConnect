@@ -3,432 +3,113 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Official Dashboard — Debug (Firestore)</title>
+  <title>Official Dashboard — BarangayConnect</title>
+
   <link rel="stylesheet" href="style.css">
   <style>
-    :root{--blue:#1e5bb8;--muted:#f4f6fb;--card:#fff;--text:#0f172a}
+    :root{--blue:#1e5bb8;--green:#16a34a;--muted:#f4f6fb;--card:#fff;--text:#0f172a}
     body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--muted);color:var(--text)}
-    header{background:linear-gradient(90deg,var(--blue),#174a95);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
-    header .brand{display:flex;gap:12px;align-items:center}
+    header{background:linear-gradient(90deg,var(--blue),#174a95);color:white;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
     .logo{width:36px;height:36px;object-fit:contain}
-    main{max-width:1200px;margin:18px auto;padding:18px;display:grid;grid-template-columns:360px 1fr;gap:18px}
-    .panel{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
+    main{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px;max-width:1200px;margin:18px auto}
+    @media (max-width:900px){main{grid-template-columns:1fr;padding:12px}}
+    .panel{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
     .filter-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
-    #reportList{list-style:none;margin:0;padding:0;max-height:70vh;overflow:auto}
-    #reportList li{padding:10px;border-radius:8px;margin-bottom:8px;border:1px solid #eef3ff;cursor:pointer}
+    .filter-row select, .filter-row input{padding:8px;border-radius:8px;border:1px solid #e6eefc}
+    #reportList{list-style:none;margin:0;padding:0;max-height:72vh;overflow:auto}
+    #reportList li{padding:12px;border-radius:8px;margin-bottom:8px;border:1px solid #eef3ff;cursor:pointer}
     #reportList li:hover{background:#f8fbff}
+    #reportList li.selected{background:#e6f6ee;border-left:4px solid var(--blue);font-weight:600}
     .small{font-size:13px;color:#516179}
     .muted{color:#6b7280;font-size:13px}
-    .detail { padding: 12px; min-height: 320px; }
-    .btn { padding:8px 10px;border-radius:8px;border:0;background:var(--blue);color:white;cursor:pointer }
+    .detail-grid{display:flex;flex-direction:column;gap:12px}
+    .kv{display:grid;grid-template-columns:140px 1fr;gap:8px;padding:10px 0}
+    .pill{padding:6px 8px;border-radius:999px;border:1px solid #e6eefc;background:#fff;display:inline-block}
+    .btn{background:var(--blue);color:white;border:0;padding:10px 12px;border-radius:8px;cursor:pointer}
     .btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--blue)}
-    .status-pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid #e6eefc;background:#fff}
-    .search { flex:1; padding:8px;border-radius:8px;border:1px solid #e6eefc; }
-    .toolbar { display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
-    @media (max-width:900px){ main{grid-template-columns:1fr; padding:12px} }
+    .status-buttons{display:flex;gap:8px;flex-wrap:wrap}
+    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
+    .thumb img{width:100%;height:100%;object-fit:cover;border-radius:6px}
   </style>
 </head>
+
 <body>
-  <header>
-    <div class="brand">
-      <img src="logo.png" class="logo" alt="Logo">
-      <div>
-        <h1 style="margin:0;font-size:18px">BarangayConnect — Official Dashboard (Debug)</h1>
-        <div class="muted small" id="subHeader">Barangay — <span id="officialBarangay">—</span></div>
-      </div>
-    </div>
+<header>
+  <div style="display:flex;gap:12px;align-items:center">
+    <img src="logo.png" class="logo" alt="Logo">
     <div>
-      <button id="logoutBtn" class="btn">Logout</button>
+      <h1 style="margin:0;font-size:18px">BarangayConnect — Official Dashboard</h1>
+      <div class="muted small">Barangay — <span id="officialBarangay">—</span></div>
     </div>
-  </header>
+  </div>
 
-  <main>
-    <!-- left column -->
-    <aside class="panel">
+  <div>
+    <button id="logoutBtn" class="btn">Logout</button>
+  </div>
+</header>
+
+<main>
+  <aside class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3 style="margin:0">Reports</h3>
+      <div class="muted small">Live / Firestore</div>
+    </div>
+
+    <div class="filter-row">
+      <select id="filterStatus" title="Filter by status">
+        <option value="All">All statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Resolved">Resolved</option>
+      </select>
+
+      <select id="sortReports" title="Sort by time">
+        <option value="latest">Latest first</option>
+        <option value="oldest">Oldest first</option>
+      </select>
+
+      <input id="searchInput" placeholder="Search issue / street / author" style="flex:1" />
+      <button id="refreshBtn" class="btn secondary">⟳</button>
+    </div>
+
+    <div id="statusIndicator" class="small" style="text-align:center;margin:6px 0;color:#16a34a">
+      Connecting to Firestore...
+    </div>
+
+    <ul id="reportList" aria-live="polite"></ul>
+  </aside>
+
+  <section class="panel detail-grid">
+    <div>
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 style="margin:0">Reports</h3>
-        <div class="muted small">Live / Firestore (debug)</div>
+        <div>
+          <h2 id="detailTitle" style="margin:0">Select a report</h2>
+          <div id="detailSub" class="muted small">Click a report from the list to view details.</div>
+        </div>
+        <div><span class="pill" id="detailStatus">—</span></div>
       </div>
 
-      <div class="filter-row" style="margin-top:10px">
-        <select id="filterStatus" class="small">
-          <option value="All">All statuses</option>
-          <option value="Pending">Pending</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Resolved">Resolved</option>
-        </select>
-
-        <select id="sortReports" class="small">
-          <option value="latest">Latest first</option>
-          <option value="oldest">Oldest first</option>
-        </select>
-
-        <input id="searchInput" class="search" placeholder="Search issue / street / author" />
-        <button id="refreshBtn" class="btn secondary">⟳</button>
+      <div class="kv" style="margin-top:12px">
+        <div class="small">Issue Type</div><div id="detailIssue">—</div>
+        <div class="small">Location</div><div id="detailLocation">—</div>
+        <div class="small">Reported By</div><div id="detailAuthor">—</div>
+        <div class="small">Submitted</div><div id="detailTimestamp">—</div>
+        <div class="small">Description</div><div id="detailDesc">—</div>
       </div>
+    </div>
 
-      <div id="statusIndicator" class="small" style="text-align:center;margin:6px 0;color:#16a34a">
-        Connecting to Firestore...
-      </div>
+    <div>
+      <h4 style="margin:6px 0">Change status</h4>
+      <div class="status-buttons" id="statusBar"></div>
+    </div>
 
-      <ul id="reportList" aria-live="polite"></ul>
-    </aside>
+    <div>
+      <h4 style="margin:6px 0">Proof media</h4>
+      <div class="gallery" id="proofGallery"></div>
+    </div>
+  </section>
+</main>
 
-    <!-- right column detail -->
-    <section class="panel detail">
-      <h2 id="detailTitle">Select a report</h2>
-      <div id="detailMeta" class="small muted">Click a report on the left to view / update details.</div>
-      <div id="detailContent" style="margin-top:12px"></div>
-      <div id="detailControls" style="margin-top:12px;display:flex;gap:8px"></div>
-      <div id="debugConsole" style="margin-top:14px;font-family:monospace;font-size:12px;color:#333"></div>
-    </section>
-  </main>
-
-  <!-- Firebase SDK + App logic -->
-  <script type="module">
-    // ----------------------------
-    // Firebase SDK imports
-    // ----------------------------
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      query,
-      where,
-      orderBy,
-      onSnapshot,
-      getDocs,
-      doc,
-      updateDoc,
-      limit
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    // ----------------------------
-    // Firebase config (live)
-    // ----------------------------
-    const firebaseConfig = {
-      apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
-      authDomain: "iss-bc.firebaseapp.com",
-      projectId: "iss-bc",
-      storageBucket: "iss-bc.appspot.com",
-      messagingSenderId: "455122393981",
-      appId: "1:455122393981:web:bdf281da744767c0064a14",
-    };
-
-    // ----------------------------
-    // Init
-    // ----------------------------
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    window.db = db; // debug access from console
-
-    // ----------------------------
-    // UI refs
-    // ----------------------------
-    const reportListEl = document.getElementById('reportList');
-    const statusIndicator = document.getElementById('statusIndicator');
-    const filterStatus = document.getElementById('filterStatus');
-    const sortReports = document.getElementById('sortReports');
-    const searchInput = document.getElementById('searchInput');
-    const refreshBtn = document.getElementById('refreshBtn');
-    const detailTitle = document.getElementById('detailTitle');
-    const detailMeta = document.getElementById('detailMeta');
-    const detailContent = document.getElementById('detailContent');
-    const detailControls = document.getElementById('detailControls');
-    const debugConsole = document.getElementById('debugConsole');
-    const officialBarangayEl = document.getElementById('officialBarangay');
-
-    // ----------------------------
-    // Helpers
-    // ----------------------------
-    function logDebug(...msg) {
-      console.log('[official-debug]', ...msg);
-      debugConsole.textContent = (debugConsole.textContent ? debugConsole.textContent + '\n' : '') + msg.join(' ');
-      // keep last 2000 chars
-      if (debugConsole.textContent.length > 2000) debugConsole.textContent = debugConsole.textContent.slice(-2000);
-    }
-
-    function toast(msg, tone = '#1e5bb8') {
-      const t = document.createElement('div');
-      t.textContent = msg;
-      Object.assign(t.style, {
-        position: 'fixed', right: '20px', bottom: '20px', padding: '10px 14px',
-        background: tone, color: '#fff', borderRadius: '8px', zIndex: 9999
-      });
-      document.body.appendChild(t);
-      setTimeout(()=> t.remove(), 2500);
-    }
-
-    // ----------------------------
-    // Current user (from localStorage)
-    // ----------------------------
-    const currentUser = (() => {
-      try {
-        return JSON.parse(localStorage.getItem('currentUser')) || {};
-      } catch(e) { return {}; }
-    })();
-
-    // If missing role/barangay, redirect to login
-    if (!currentUser || currentUser.role !== 'official') {
-      // If you want to allow LGU or captain roles change this check accordingly
-      console.warn('No official logged in; redirecting to index.html');
-      // Do not forcibly redirect in debug, but show indicator
-      statusIndicator.textContent = 'No official logged in (check localStorage).';
-      statusIndicator.style.color = 'orange';
-    } else {
-      officialBarangayEl.textContent = currentUser.barangay || 'Santa Cruz';
-      logDebug('Logged as', currentUser.name, '|', currentUser.email, '| barangay:', currentUser.barangay);
-    }
-
-    // ----------------------------
-    // State
-    // ----------------------------
-    let unsubscribe = null;
-    let cachedReports = []; // array of {id, ...data}
-    let selectedReportId = null;
-
-    // ----------------------------
-    // Build Firestore query
-    // ----------------------------
-    function buildQuery() {
-      const barangay = (currentUser && currentUser.barangay) ? currentUser.barangay : 'Santa Cruz';
-      const statusVal = filterStatus.value;
-      const sortVal = sortReports.value === 'latest' ? 'desc' : 'asc';
-      // base query
-      const coll = collection(db, 'reports');
-      // When filtering by status, add where for status
-      // We'll always order by timestamp to return newest/oldest
-      if (statusVal && statusVal !== 'All') {
-        return query(coll, where('barangay','==', barangay), where('status','==', statusVal), orderBy('timestamp', sortVal));
-      } else {
-        return query(coll, where('barangay','==', barangay), orderBy('timestamp', sortVal));
-      }
-    }
-
-    // ----------------------------
-    // Render list
-    // ----------------------------
-    function renderListFromCache(list) {
-      reportListEl.innerHTML = '';
-      if (!list || list.length === 0) {
-        reportListEl.innerHTML = '<li style="text-align:center;color:#666">No reports found.</li>';
-        return;
-      }
-
-      list.forEach(r => {
-        const li = document.createElement('li');
-        li.dataset.id = r.id;
-        li.innerHTML = `
-          <strong>${r.issueType || 'Unknown'}</strong>
-          <div class="small"> ${r.location || ''} — ${r.author || 'Anonymous'}</div>
-          <div class="small muted">Status: <span class="status-pill">${r.status || 'Pending'}</span></div>
-        `;
-        li.addEventListener('click', () => {
-          selectReport(r.id);
-        });
-        reportListEl.appendChild(li);
-      });
-    }
-
-    // ----------------------------
-    // Select / show detail
-    // ----------------------------
-    function selectReport(id) {
-      selectedReportId = id;
-      const r = cachedReports.find(x => x.id === id);
-      if (!r) {
-        detailTitle.textContent = 'Report not found';
-        detailContent.innerHTML = '';
-        detailControls.innerHTML = '';
-        return;
-      }
-      detailTitle.textContent = `${r.issueType || 'Report'} — ${r.location || ''}`;
-      detailMeta.textContent = `${r.author || 'Unknown'} • ${new Date(r.timestamp || r.timestamp?.toDate?.()).toLocaleString?.() || r.timestamp || ''}`;
-      detailContent.innerHTML = `
-        <p><strong>Barangay:</strong> ${r.barangay || ''}</p>
-        <p><strong>Description:</strong><br>${(r.desc || r.description || '—')}</p>
-        ${r.imageUrl ? `<p><img src="${r.imageUrl}" style="max-width:220px;border-radius:8px" /></p>` : ''}
-        <p><strong>Current status:</strong> <span class="status-pill">${r.status || 'Pending'}</span></p>
-      `;
-
-      // controls
-      detailControls.innerHTML = '';
-      const makeBtn = (text, color, cb) => {
-        const b = document.createElement('button');
-        b.className = 'btn';
-        b.textContent = text;
-        b.style.background = color;
-        b.style.border = '0';
-        b.addEventListener('click', cb);
-        return b;
-      };
-
-      const pendingBtn = makeBtn('Mark Pending', '#6b7280', async () => updateStatus(id, 'Pending'));
-      const inProgBtn = makeBtn('Mark In Progress', '#1e5bb8', async () => updateStatus(id, 'In Progress'));
-      const resolvedBtn = makeBtn('Mark Resolved', '#16a34a', async () => updateStatus(id, 'Resolved'));
-
-      detailControls.appendChild(pendingBtn);
-      detailControls.appendChild(inProgBtn);
-      detailControls.appendChild(resolvedBtn);
-    }
-
-    // ----------------------------
-    // Update status in Firestore (and update cache)
-    // ----------------------------
-    async function updateStatus(id, newStatus) {
-      try {
-        logDebug(`Updating ${id} -> ${newStatus}`);
-        const ref = doc(db, 'reports', id);
-        await updateDoc(ref, { status: newStatus });
-        toast(`Status set to "${newStatus}"`);
-        // update local cache immediately for responsive UI
-        const idx = cachedReports.findIndex(r => r.id === id);
-        if (idx !== -1) {
-          cachedReports[idx].status = newStatus;
-          renderListFromCache(cachedReports);
-          selectReport(id);
-        }
-      } catch (err) {
-        console.error('Failed to update status', err);
-        toast('Failed to update status — check console', '#c62828');
-      }
-    }
-
-    // ----------------------------
-    // Apply search client-side
-    // ----------------------------
-    function applySearchAndRender() {
-      const q = (searchInput.value || '').trim().toLowerCase();
-      if (!q) {
-        renderListFromCache(cachedReports);
-        return;
-      }
-      const filtered = cachedReports.filter(r => {
-        return (r.issueType || '').toLowerCase().includes(q) ||
-               (r.location || '').toLowerCase().includes(q) ||
-               (r.author || '').toLowerCase().includes(q) ||
-               (r.desc || r.description || '').toLowerCase().includes(q);
-      });
-      renderListFromCache(filtered);
-    }
-
-    // ----------------------------
-    // Attach realtime listener
-    // ----------------------------
-    function attachLiveListener() {
-      if (!db) {
-        statusIndicator.textContent = 'Firestore not initialized';
-        statusIndicator.style.color = 'red';
-        return;
-      }
-
-      // detach previous
-      if (unsubscribe) {
-        try { unsubscribe(); } catch(e){/* ignore */ }
-        unsubscribe = null;
-      }
-
-      let qRef;
-      try {
-        qRef = buildQuery();
-      } catch (err) {
-        console.error('Error building query', err);
-        statusIndicator.textContent = 'Query build error — check console';
-        statusIndicator.style.color = 'red';
-        return;
-      }
-
-      statusIndicator.textContent = 'Listening (Firestore)...';
-      statusIndicator.style.color = '#16a34a';
-      logDebug('Attaching Firestore listener with query:', qRef);
-
-      unsubscribe = onSnapshot(qRef,
-        (snap) => {
-          logDebug('Snapshot received, size =', snap.size);
-          cachedReports = snap.docs.map(d => {
-            const data = d.data();
-            // try convert timestamp to ISO if needed
-            const tsVal = data.timestamp;
-            return { id: d.id, ...data };
-          });
-          // Sort client-side if we want (should already be ordered)
-          renderListFromCache(cachedReports);
-          statusIndicator.textContent = '✅ Firestore Live Connected';
-          statusIndicator.style.color = '#16a34a';
-        },
-        (err) => {
-          console.error('onSnapshot error', err);
-          statusIndicator.textContent = '❌ Firestore error — check console';
-          statusIndicator.style.color = 'red';
-          // fallback to localStorage
-          cachedReports = JSON.parse(localStorage.getItem('reports') || '[]').map((r,i)=>({id:r.id||('local-'+i), ...r}));
-          renderListFromCache(cachedReports);
-          logDebug('Fell back to localStorage reports (count=' + cachedReports.length + ')');
-        }
-      );
-    }
-
-    // ----------------------------
-    // Manual initial load (getDocs fallback)
-    // ----------------------------
-    async function initialLoad() {
-      try {
-        const qRef = buildQuery();
-        statusIndicator.textContent = 'Fetching initial snapshot...';
-        logDebug('initial getDocs for', qRef);
-        const snap = await getDocs(qRef);
-        cachedReports = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderListFromCache(cachedReports);
-        statusIndicator.textContent = '✅ Firestore initial load OK';
-        statusIndicator.style.color = '#16a34a';
-      } catch (err) {
-        console.error('Initial getDocs failed', err);
-        statusIndicator.textContent = 'Initial Firestore load failed; using local data';
-        statusIndicator.style.color = 'orange';
-        cachedReports = JSON.parse(localStorage.getItem('reports') || '[]').map((r,i)=>({id:r.id||('local-'+i), ...r}));
-        renderListFromCache(cachedReports);
-        logDebug('Initial fallback loaded local reports', cachedReports.length);
-      }
-
-      // After initial load attach realtime listener
-      attachLiveListener();
-    }
-
-    // ----------------------------
-    // Event wiring
-    // ----------------------------
-    filterStatus.addEventListener('change', () => {
-      // Re-attach listener because query changed (when status filter toggled)
-      attachLiveListener();
-    });
-
-    sortReports.addEventListener('change', () => {
-      attachLiveListener();
-    });
-
-    searchInput.addEventListener('input', () => {
-      applySearchAndRender();
-    });
-
-    refreshBtn.addEventListener('click', () => {
-      toast('Refreshing...');
-      initialLoad();
-    });
-
-    // logout
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      localStorage.removeItem('currentUser');
-      toast('Logged out');
-      window.location.href = 'index.html';
-    });
-
-    // ----------------------------
-    // Kickoff
-    // ----------------------------
-    (async () => {
-      logDebug('Starting official debug UI');
-      await initialLoad();
-    })();
-  </script>
+<script type="module" src="official.js"></script>
 </body>
 </html>
