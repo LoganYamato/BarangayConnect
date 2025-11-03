@@ -3,6 +3,7 @@ const defaultUsers = [
   { email: "official@barangay.gov", password: "official123", role: "official", name: "Brgy. Official", barangay: "Santa Cruz" },
   { email: "resident1@gmail.com", password: "resident123", role: "resident", name: "Resident One", barangay: "Santa Cruz" },
   { email: "resident2@gmail.com", password: "resident123", role: "resident", name: "Resident Two", barangay: "Santa Cruz" },
+  { email: "brgycpt@gmail.com", password: "captain123", role: "captain", name: "Captain", barangay: "Santa Cruz" },
   { email: "lgu@province.gov", password: "lgu123", role: "lgu", name: "Provincial LGU Officer" }
 ];
 
@@ -34,6 +35,7 @@ if (loginForm) {
         if (user.role === "official") window.location.href = "official.html";
         else if (user.role === "resident") window.location.href = "resident.html";
         else if (user.role === "lgu") window.location.href = "lgu.html";
+        else if (user.role === "captain") window.location.href = "staff.html";
         else msg.textContent = "Unknown role. Please contact admin.";
       }, 800);
     } else {
