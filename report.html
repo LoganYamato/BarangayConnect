@@ -1,104 +1,208 @@
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { 
-  getFirestore, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp 
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resident Reports | BarangayConnect</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .container h2 { padding-top: 5%; }
+    #description { height: 150px; resize: none; }
+    .container { padding: 0 20px; }
+    #reportForm textarea { box-sizing: border-box; width: 98%; margin-right: 2%; }
+    #reportForm input[type="file"] { display: block; margin: 10px 0 20px 0; padding: 10px 0; width: 98%; }
+    #street-group, #details-group { display: none; }
+    .report-item { background: #f9f9f9; margin: 8px 0; padding: 10px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .report-item img { max-width: 120px; margin-top: 4px; border-radius: 8px; display: block; }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <img src="logo.png" alt="Barangay Logo" class="logo">
+    <h1>BarangayConnect</h1>
+    <nav>
+      <a href="resident.html">Dashboard</a>
+      <a href="report.html" class="active">Report</a>
+      <a href="official.html">Officials</a>
+      <button id="logoutBtn" class="logout">Logout</button>
+    </nav>
+  </header>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
-  authDomain: "iss-bc.firebaseapp.com",
-  projectId: "iss-bc",
-  storageBucket: "iss-bc.firebasestorage.app",
-  messagingSenderId: "455122393981",
-  appId: "1:455122393981:web:bdf281da744767c0064a14",
-  measurementId: "G-6VQLV0PG81"
-};
+  <main class="container">
+    <h2 id="welcomeText">Welcome, Resident!</h2>
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+    <form id="reportForm">
+      <label for="issue">Report Category:</label>
+      <select id="issue" required>
+        <option value="">Choose Category</option>
+        <option>Waste</option>
+        <option>Road</option>
+        <option>Safety</option>
+        <option>Health</option>
+      </select>
 
-const reportForm = document.getElementById("reportForm");
-const reportsContainer = document.getElementById("reportsContainer");
+      <label for="brgy">Barangay:</label>
+      <select id="brgy" required>
+        <option value="">Select Barangay</option>
+        <option value="Santa Cruz">Santa Cruz</option>
+      </select>
 
-// 🟦 Submit Report
-reportForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
+      <div id="street-group">
+        <label for="street">Street:</label>
+        <select id="street" required>
+          <option value="">Select Street</option>
+          <option data-brgy="Santa Cruz">Chino Roces Ave</option>
+          <option data-brgy="Santa Cruz">Davila</option>
+          <option data-brgy="Santa Cruz">Kakarong</option>
+          <option data-brgy="Santa Cruz">Kalayaan Ave</option>
+          <option data-brgy="Santa Cruz">Manchas</option>
+          <option data-brgy="Santa Cruz">Mascardo</option>
+          <option data-brgy="Santa Cruz">Martinez Unidos</option>
+          <option data-brgy="Santa Cruz">Metropolitan Ave</option>
+          <option data-brgy="Santa Cruz">Montojo</option>
+          <option data-brgy="Santa Cruz">Pablo Ocampo Sr. Ext</option>
+          <option data-brgy="Santa Cruz">Panama</option>
+          <option data-brgy="Santa Cruz">Ponte</option>
+          <option data-brgy="Santa Cruz">South Ave</option>
+          <option data-brgy="Santa Cruz">Suez</option>
+          <option data-brgy="Santa Cruz">Venecia</option>
+          <option data-brgy="Santa Cruz">Visita</option>
+          <option data-brgy="Santa Cruz">Yague</option>
+          <option data-brgy="Santa Cruz">Zapote</option>
+        </select>
+      </div>
 
-  const issue = document.getElementById("issue").value;
-  const brgy = document.getElementById("brgy").value;
-  const street = document.getElementById("street").value;
-  const desc = document.getElementById("description").value;
-  const imageUpload = document.getElementById("imageUpload");
+      <div id="details-group">
+        <label for="description">Description:</label>
+        <textarea id="description" placeholder="Describe the issue..." required></textarea>
 
-  const currentUser = JSON.parse(localStorage.getItem("currentUser")) || {};
-  const author = currentUser.name || "Anonymous Resident";
+        <label for="imageUpload">Upload Image (optional):</label>
+        <input type="file" id="imageUpload" name="imageUpload" accept="image/*" />
 
-  // Convert image to Base64
-  let imageData = null;
-  if (imageUpload.files[0]) {
-    const file = imageUpload.files[0];
-    imageData = await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result);
-      reader.readAsDataURL(file);
+        <button type="submit">Submit Report</button>
+      </div>
+      <p id="submitMessage"></p>
+    </form>
+
+    <section id="reportList">
+      <h3>Your Submitted Reports</h3>
+      <div id="reportsContainer"></div>
+    </section>
+  </main>
+
+  <footer class="foot"><small>BarangayConnect — Resident Report Page</small></footer>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } 
+      from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    // ✅ Correct Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
+      authDomain: "iss-bc.firebaseapp.com",
+      projectId: "iss-bc",
+      storageBucket: "iss-bc.appspot.com", // ✅ FIXED
+      messagingSenderId: "455122393981",
+      appId: "1:455122393981:web:bdf281da744767c0064a14",
+      measurementId: "G-6VQLV0PG81"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const reportForm = document.getElementById("reportForm");
+    const issueInput = document.getElementById("issue");
+    const brgyInput = document.getElementById("brgy");
+    const streetInput = document.getElementById("street");
+    const descInput = document.getElementById("description");
+    const imageUpload = document.getElementById("imageUpload");
+    const submitMsg = document.getElementById("submitMessage");
+    const reportsContainer = document.getElementById("reportsContainer");
+
+    // 🔹 Show street/details after barangay selection
+    brgyInput.addEventListener("change", () => {
+      document.getElementById("street-group").style.display = brgyInput.value ? "block" : "none";
+      document.getElementById("details-group").style.display = brgyInput.value ? "block" : "none";
     });
-  }
 
-  try {
-    await addDoc(collection(db, "reports"), {
-      issueType: issue,
-      barangay: brgy,
-      location: street,
-      description: desc,
-      imageData: imageData || null,
-      author,
-      status: "Pending",
-      timestamp: serverTimestamp()
+    // 🔹 Submit report
+    reportForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      submitMsg.textContent = "⏳ Submitting...";
+      submitMsg.style.color = "#555";
+
+      const currentUser = JSON.parse(localStorage.getItem("currentUser")) || {};
+      const author = currentUser.name || "Anonymous Resident";
+
+      let imageData = "";
+      if (imageUpload?.files[0]) {
+        const file = imageUpload.files[0];
+        imageData = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      const report = {
+        issueType: issueInput.value,
+        barangay: brgyInput.value,
+        location: streetInput.value,
+        description: descInput.value,
+        imageData: imageData || null,
+        author,
+        status: "Pending",
+        timestamp: serverTimestamp()
+      };
+
+      try {
+        await addDoc(collection(db, "reports"), report);
+        submitMsg.textContent = "✅ Report submitted successfully!";
+        submitMsg.style.color = "green";
+        reportForm.reset();
+        loadReports();
+      } catch (err) {
+        console.error("Error adding report:", err);
+        submitMsg.textContent = "❌ Failed to submit report. Try again.";
+        submitMsg.style.color = "red";
+      }
     });
 
-    alert("✅ Report submitted successfully!");
-    reportForm.reset();
-    loadReports(); // Refresh after submitting
-  } catch (error) {
-    console.error("Error submitting report:", error);
-    alert("❌ Failed to submit report. Try again.");
-  }
-});
+    // 🔹 Load submitted reports
+    async function loadReports() {
+      reportsContainer.innerHTML = "<p>Loading your reports...</p>";
+      const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
+      const snapshot = await getDocs(q);
 
-// 🟩 Load Reports
-async function loadReports() {
-  reportsContainer.innerHTML = "<p>Loading your reports...</p>";
+      if (snapshot.empty) {
+        reportsContainer.innerHTML = "<p>No reports yet.</p>";
+        return;
+      }
 
-  const currentUser = JSON.parse(localStorage.getItem("currentUser")) || {};
-  const author = currentUser.name || "Anonymous Resident";
+      reportsContainer.innerHTML = "";
+      snapshot.forEach((docSnap) => {
+        const report = docSnap.data();
+        const div = document.createElement("div");
+        div.className = "report-item";
+        div.innerHTML = `
+          <strong>${report.issueType}</strong> — ${report.barangay || ''}, ${report.location || ''}<br>
+          <em>${report.description}</em><br>
+          <small>Status: ${report.status}</small><br>
+          ${report.imageData ? `<img src="${report.imageData}" alt="Uploaded Proof">` : ""}
+        `;
+        reportsContainer.appendChild(div);
+      });
+    }
 
-  const q = query(collection(db, "reports"), where("author", "==", author), orderBy("timestamp", "desc"));
-  const querySnap = await getDocs(q);
+    // 🔹 Initial load
+    document.addEventListener("DOMContentLoaded", loadReports);
 
-  reportsContainer.innerHTML = "";
-
-  if (querySnap.empty) {
-    reportsContainer.innerHTML = "<p>No reports submitted yet.</p>";
-    return;
-  }
-
-  querySnap.forEach((doc) => {
-    const r = doc.data();
-    const div = document.createElement("div");
-    div.className = "report-item";
-    div.innerHTML = `
-      <h4>${r.issueType}</h4>
-      <p><strong>Barangay:</strong> ${r.barangay}</p>
-      <p><strong>Location:</strong> ${r.location}</p>
-      <p>${r.description}</p>
-      ${r.imageData ? `<img src="${r.imageData}" alt="Report Image">` : ""}
-      <p><small>Status: ${r.status || "Pending"}</small></p>
-      <p><small>${r.timestamp ? new Date(r.timestamp.seconds * 1000).toLocaleString() : ""}</small></p>
-    `;
-    reportsContainer.appendChild(div);
-  });
-}
-
-// Auto-load reports when page opens
-loadReports();
-</script>
+    // 🔹 Logout
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("currentUser");
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>
