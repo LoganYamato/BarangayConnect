@@ -1,207 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BarangayConnect | Official Dashboard</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Officials Dashboard | BarangayConnect</title>
+  <link rel="stylesheet" href="style.css" />
   <style>
     .report-card {
       background: #f9f9f9;
-      border-radius: 10px;
       margin: 10px 0;
       padding: 15px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     }
     .report-card img {
-      max-width: 140px;
-      border-radius: 8px;
       display: block;
       margin-top: 8px;
+      border-radius: 10px;
+      max-width: 180px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
     }
-    .status-btn {
-      padding: 6px 12px;
-      border: none;
-      border-radius: 6px;
-      margin-top: 8px;
-      cursor: pointer;
+    .status {
       font-weight: bold;
-    }
-    .status-pending { background: #ffcc00; }
-    .status-resolved { background: #4CAF50; color: white; }
-    .update-section {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid #ddd;
-    }
-    .update-section input[type="file"] {
-      margin-top: 4px;
-    }
-    .update-section textarea {
-      width: 100%;
-      min-height: 50px;
-      resize: vertical;
-      padding: 5px;
-      margin-top: 4px;
-    }
-    .send-update {
-      background: #1976D2;
-      color: white;
-      border: none;
-      padding: 6px 10px;
-      border-radius: 5px;
-      margin-top: 5px;
-      cursor: pointer;
+      margin-top: 8px;
     }
   </style>
 </head>
 <body>
   <header class="navbar">
     <img src="logo.png" alt="Barangay Logo" class="logo">
-    <h1>BarangayConnect — Official Dashboard</h1>
+    <h1>BarangayConnect</h1>
     <nav>
-      <a href="official.html" class="active">Reports</a>
-      <a href="index.html" id="logoutBtn">Logout</a>
+      <a href="resident.html">Dashboard</a>
+      <a href="report.html">Report</a>
+      <a href="official.html" class="active">Officials</a>
+      <button id="logoutBtn" class="logout">Logout</button>
     </nav>
   </header>
 
   <main class="container">
-    <h2>Incoming Resident Reports</h2>
-    <div id="reportsContainer"></div>
+    <h2>Officials Dashboard</h2>
+    <section id="reportsSection">
+      <h3>Incoming Resident Reports</h3>
+      <div id="reportsContainer"></div>
+    </section>
   </main>
 
-  <footer><small>&copy; 2025 BarangayConnect</small></footer>
+  <footer class="foot"><small>BarangayConnect — Officials Page</small></footer>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { 
-      getFirestore, collection, getDocs, updateDoc, doc, arrayUnion 
-    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs } 
+      from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
       authDomain: "iss-bc.firebaseapp.com",
       projectId: "iss-bc",
       storageBucket: "iss-bc.firebasestorage.app",
       messagingSenderId: "455122393981",
-      appId: "1:455122393981:web:bdf281da744767c0064a14"
+      appId: "1:455122393981:web:bdf281da744767c0064a14",
+      measurementId: "G-6VQLV0PG81"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const reportsContainer = document.getElementById("reportsContainer");
 
     async function loadReports() {
-      const container = document.getElementById("reportsContainer");
-      container.innerHTML = "<p>Loading reports...</p>";
+      reportsContainer.innerHTML = "<p>Loading reports...</p>";
+      const snap = await getDocs(collection(db, "reports"));
+      reportsContainer.innerHTML = "";
 
-      const querySnapshot = await getDocs(collection(db, "reports"));
-      container.innerHTML = "";
+      snap.forEach(doc => {
+        const r = doc.data();
+        const card = document.createElement("div");
+        card.className = "report-card";
 
-      if (querySnapshot.empty) {
-        container.innerHTML = "<p>No reports available yet.</p>";
-        return;
-      }
-
-      querySnapshot.forEach((docSnap) => {
-        const report = docSnap.data();
-        const reportDiv = document.createElement("div");
-        reportDiv.className = "report-card";
-
-       const imgHTML = report.imageData
-  ? `<img src="${report.imageData}" alt="Proof Image">`
-  : report.imageUrl
-    ? `<img src="${report.imageUrl}" alt="Proof Image">`
-    : `<div style="margin-top:8px;color:#888;font-size:0.9em;display:flex;align-items:center;gap:6px;">
-         📷 <span>No image provided</span>
-       </div>`;
-
-
-        const updatesHTML = (report.updates || [])
-          .map(up => `
-            <div class="resident-update">
-              <p><strong>Official Reply:</strong> ${up.text}</p>
-              ${up.image ? `<img src="${up.image}" alt="Update Image">` : ""}
-            </div>
-          `).join("");
-
-        reportDiv.innerHTML = `
-          <strong>${report.issueType}</strong> — ${report.location || ''}<br>
-          <em>${report.description || ''}</em><br>
-          <small>Author: ${report.author || 'Unknown'}</small><br>
-          <small>Status: ${report.status || 'Pending'}</small><br>
-          ${imgHTML}
-          ${updatesHTML}
-          <div class="update-section">
-            <textarea placeholder="Send an update..."></textarea>
-            <input type="file" accept="image/*">
-            <button class="send-update" data-id="${docSnap.id}">Send Update</button>
-          </div>
-          <button class="status-btn ${report.status === 'Resolved' ? 'status-resolved' : 'status-pending'}"
-            data-id="${docSnap.id}">
-            ${report.status === 'Resolved' ? 'Resolved' : 'Mark as Resolved'}
-          </button>
+        card.innerHTML = `
+          <h4>${r.issueType || "Unknown Issue"}</h4>
+          <p><strong>Barangay:</strong> ${r.barangay || "N/A"}</p>
+          <p><strong>Location:</strong> ${r.location || "N/A"}</p>
+          <p><strong>Description:</strong> ${r.description || r.desc || "No details provided"}</p>
+          ${r.imageData ? `<img src="${r.imageData}" alt="Report Image">` 
+          : r.imageUrl ? `<img src="${r.imageUrl}" alt="Report Image">` : ""}
+          <p><small>By: ${r.author || "Anonymous"} — ${r.timestamp ? new Date(r.timestamp.seconds * 1000).toLocaleString() : ""}</small></p>
+          <p class="status">Status: ${r.status || "Pending"}</p>
         `;
-
-        container.appendChild(reportDiv);
+        reportsContainer.appendChild(card);
       });
 
-      // Handle updates
-      document.querySelectorAll(".send-update").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const id = btn.dataset.id;
-          const card = btn.closest(".report-card");
-          const textArea = card.querySelector("textarea");
-          const fileInput = card.querySelector("input[type='file']");
-          const text = textArea.value.trim();
-          let imageData = "";
-
-          if (fileInput.files[0]) {
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-              imageData = e.target.result;
-              await pushUpdate(id, text, imageData);
-            };
-            reader.readAsDataURL(fileInput.files[0]);
-          } else {
-            await pushUpdate(id, text, null);
-          }
-        });
-      });
-
-      // Handle status update
-      document.querySelectorAll(".status-btn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const id = btn.getAttribute("data-id");
-          await updateDoc(doc(db, "reports", id), { status: "Resolved" });
-          alert("Report marked as resolved!");
-          loadReports();
-        });
-      });
+      if (snap.empty) {
+        reportsContainer.innerHTML = "<p>No reports submitted yet.</p>";
+      }
     }
 
-    async function pushUpdate(reportId, text, image) {
-      if (!text && !image) return alert("Please enter a message or attach an image.");
-      const updateRef = doc(db, "reports", reportId);
-      await updateDoc(updateRef, {
-        updates: arrayUnion({
-          text: text || "",
-          image: image || "",
-          timestamp: new Date().toISOString()
-        })
-      });
-      alert("Update sent successfully!");
-      loadReports();
-    }
-
-    document.addEventListener("DOMContentLoaded", loadReports);
-
-    // Logout
-    document.getElementById("logoutBtn").addEventListener("click", () => {
-      localStorage.removeItem("currentUser");
-      window.location.href = "index.html";
-    });
+    loadReports();
   </script>
 </body>
 </html>
