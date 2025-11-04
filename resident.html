@@ -168,6 +168,30 @@
       add(item){ const all = AnnStore.list(); all.unshift(item); localStorage.setItem(ANN_KEY, JSON.stringify(all)); }
     };
 
+    // Dynamically show "Officials" link in navbar for authorized roles
+document.addEventListener("DOMContentLoaded", () => {
+  const allowedRoles = ["official", "captain", "lgu"]; // roles allowed to see the Officials page
+
+  if (allowedRoles.includes(currentUser?.role)) {
+    const officialsLink = document.createElement("a");
+    officialsLink.href = "official.html";
+    officialsLink.textContent = "Officials";
+
+    // Optional: make it appear before Logout instead of after
+    const navbarNav = document.querySelector(".navbar nav");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    navbarNav.insertBefore(officialsLink, logoutBtn);
+  }
+
+  // Continue with your existing page logic
+  renderAnnouncements();
+  fillContacts();
+  renderThread();
+  loadCharts();
+});
+
+    
     const DMStore = {
       list(peer){
         const key = DM_KEY(currentUser.name||"Resident", peer);
