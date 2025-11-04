@@ -1,295 +1,290 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LGU Dashboard - Makati City</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Official Dashboard — BarangayConnect</title>
+  <link rel="stylesheet" href="style.css">
   <style>
-    body {
-      font-family: "Segoe UI", sans-serif;
-      background: #f4f6fa;
-      margin: 0;
-    }
-
-    header {
-      background: #003b8e;
-      color: white;
-      padding: 20px;
-      text-align: center;
-      position: relative;
-    }
-
-    #logoutBtn {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: #f44336;
-      border: none;
-      color: white;
-      padding: 10px 18px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.2s;
-    }
-    #logoutBtn:hover { background: #d32f2f; }
-
-    #connectionStatus {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      background: #f44336;
-      color: white;
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-size: 14px;
-      transition: background 0.3s;
-    }
-    #connectionStatus.connected { background: #4caf50; }
-
-    main {
-      max-width: 1200px;
-      margin: 30px auto;
-      background: white;
-      padding: 25px 35px;
-      border-radius: 12px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-    }
-
-    h2 {
-      color: #003b8e;
-      border-bottom: 2px solid #003b8e;
-      padding-bottom: 5px;
-    }
-
-    .summary {
-      display: flex;
-      justify-content: space-between;
-      margin: 20px 0;
-      flex-wrap: wrap;
-    }
-
-    .summary-card {
-      background: #003b8e;
-      color: white;
-      padding: 20px;
-      flex: 1 1 220px;
-      margin: 10px;
-      text-align: center;
-      border-radius: 10px;
-    }
-
-    .chart-container {
-      display: flex;
-      justify-content: space-around;
-      flex-wrap: wrap;
-      margin-top: 30px;
-    }
-
-    canvas {
-      width: 400px !important;
-      height: 300px !important;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 25px;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 10px;
-      text-align: left;
-    }
-
-    th {
-      background: #003b8e;
-      color: white;
-    }
-
-    select {
-      padding: 5px;
-      border-radius: 6px;
-      margin-bottom: 15px;
-    }
+    :root{--blue:#1e5bb8;--green:#16a34a;--muted:#f4f6fb;--card:#fff;--text:#0f172a}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--muted);color:var(--text)}
+    header{background:linear-gradient(90deg,var(--blue),#174a95);color:white;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    header .brand{display:flex;gap:12px;align-items:center}
+    header h1{font-size:18px;margin:0}
+    #logoutBtn{background:#dc3545;border:0;color:white;padding:8px 12px;border-radius:8px;cursor:pointer}
+    main{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px;max-width:1200px;margin:18px auto}
+    @media (max-width:900px){main{grid-template-columns:1fr;padding:12px}}
+    .panel{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
+    .filter-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+    .filter-row select, .filter-row input {padding:8px;border-radius:8px;border:1px solid #e6eefc}
+    #reportList{list-style:none;margin:0;padding:0;max-height:72vh;overflow:auto}
+    #reportList li{padding:12px;border-radius:8px;margin-bottom:8px;border:1px solid #eef3ff;cursor:pointer;display:grid;grid-template-columns:1fr 120px;gap:10px}
+    #reportList li:hover{background:#f8fbff}
+    #reportList li .meta{font-size:13px;color:#516179}
+    .status-pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid #e6eefc;background:#fff}
+    .btn{background:var(--blue);color:white;border:0;padding:8px 10px;border-radius:8px;cursor:pointer}
+    .btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--blue)}
+    .small{font-size:13px;color:#516179}
+    .thumb img{width:100%;height:100%;object-fit:cover;border-radius:6px}
+    /* modal */
+    #imgModal{display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.8);align-items:center;justify-content:center}
+    #imgModal img{max-width:92%;max-height:92%;border-radius:8px}
   </style>
 </head>
-
 <body>
-  <header>
-    <div id="connectionStatus">Offline</div>
-    <h1>LGU Dashboard - Makati City</h1>
-    <h3 id="userInfo">Barangay-Level Monitoring System</h3>
+<header>
+  <div class="brand">
+    <img src="logo.png" alt="Barangay Logo" class="logo" style="width:36px;height:36px;object-fit:contain">
+    <div>
+      <h1>BarangayConnect — Official Dashboard</h1>
+      <div class="small" id="subHeader">Barangay — <span id="officialBarangay">—</span></div>
+    </div>
+  </div>
+
+  <div>
+    <a href="resident.html"> Resident Reports</a>
     <button id="logoutBtn">Logout</button>
-  </header>
+  </div>
+</header>
 
-  <main>
-    <h2>Summary Overview</h2>
-    <div class="summary">
-      <div class="summary-card">
-        <h3 id="totalReports">0</h3>
-        <p>Total Reports</p>
-      </div>
-      <div class="summary-card" style="background:#ff9800;">
-        <h3 id="pendingCount">0</h3>
-        <p>Pending</p>
-      </div>
-      <div class="summary-card" style="background:#2196f3;">
-        <h3 id="inProgressCount">0</h3>
-        <p>In Progress</p>
-      </div>
-      <div class="summary-card" style="background:#4caf50;">
-        <h3 id="resolvedCount">0</h3>
-        <p>Resolved</p>
-      </div>
+<main>
+  <aside class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3 style="margin:0">Reports</h3>
+      <div class="small">Live / Firestore</div>
     </div>
 
-    <h2>Analytics & Trends</h2>
-    <div class="chart-container">
-      <div>
-        <h3>Reports by Barangay</h3>
-        <canvas id="barangayChart"></canvas>
-      </div>
-      <div>
-        <h3>Reports by Issue Type</h3>
-        <canvas id="issueTypeChart"></canvas>
-      </div>
+    <div class="filter-row">
+      <select id="filterStatus" title="Filter by status">
+        <option value="All">All statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Resolved">Resolved</option>
+      </select>
+
+      <select id="sortReports" title="Sort">
+        <option value="latest">Latest first</option>
+        <option value="oldest">Oldest first</option>
+      </select>
+
+      <input id="searchInput" placeholder="Search issue / street / author" style="flex:1" />
+      <button id="refreshBtn" class="btn secondary">⟳</button>
     </div>
 
-    <h2>Recent Reports</h2>
-    <select id="barangayFilter">
-      <option value="all">All Barangays</option>
-    </select>
+    <div id="statusIndicator" class="small" style="text-align:center;margin:6px 0;color:#16a34a">Connecting to Firestore...</div>
 
-    <table id="reportTable">
-      <thead>
-        <tr>
-          <th>Barangay</th>
-          <th>Reporter</th>
-          <th>Issue</th>
-          <th>Status</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </main>
+    <ul id="reportList" aria-live="polite"></ul>
+  </aside>
+
+  <section class="panel">
+    <h2 id="detailTitle" style="margin:0">Select a report</h2>
+    <div class="small" id="detailSub" style="margin-bottom:8px">Click a report from the list to view details.</div>
+
+    <div id="detailArea">
+      <div class="small" style="margin-bottom:8px"><span class="status-pill" id="detailStatus">—</span></div>
+
+      <div id="detailMeta" class="small" style="margin-bottom:8px">—</div>
+
+      <div id="detailDesc" style="margin-bottom:12px;font-size:15px;color:#243240">—</div>
+
+      <div id="proofGallery" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+
+      <div id="statusControls" style="margin-top:14px;display:flex;gap:8px"></div>
+
+      <!-- Google Maps placeholder -->
+      <div style="margin-top:12px;">
+        <button id="toggleMapBtn" class="btn secondary" style="margin-bottom:6px">Show Map 📍</button>
+        <div id="mapContainer" style="display:none;"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- image modal -->
+<div id="imgModal"><img id="modalImg" alt="preview"></div>
+
+<!-- main logic -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  getDocs,
+  doc,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // --- Firebase Direct Config ---
-  const firebaseConfig = {
-    apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
-    authDomain: "iss-bc.firebaseapp.com",
-    projectId: "iss-bc",
-    storageBucket: "iss-bc.appspot.com",
-    messagingSenderId: "455122393981",
-    appId: "1:455122393981:web:bdf281da744767c0064a14",
-  };
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
+  authDomain: "iss-bc.firebaseapp.com",
+  projectId: "iss-bc",
+  storageBucket: "iss-bc.firebasestorage.app",
+  messagingSenderId: "455122393981",
+  appId: "1:455122393981:web:bdf281da744767c0064a14",
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+window.db = db; // handy for console debug
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+// UI refs
+const reportList = document.getElementById('reportList');
+const statusIndicator = document.getElementById('statusIndicator');
+const filterStatus = document.getElementById('filterStatus');
+const sortReports = document.getElementById('sortReports');
+const searchInput = document.getElementById('searchInput');
+const refreshBtn = document.getElementById('refreshBtn');
+const officialBarangay = document.getElementById('officialBarangay');
 
-  // --- User session check ---
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  if (!currentUser || currentUser.role !== "lgu") {
-    alert("Access denied. LGU login required.");
-    window.location.href = "index.html";
-  } else {
-    document.getElementById("userInfo").textContent = `Welcome, ${currentUser.name} (${currentUser.email})`;
+const detailTitle = document.getElementById('detailTitle');
+const detailSub = document.getElementById('detailSub');
+const detailStatus = document.getElementById('detailStatus');
+const detailMeta = document.getElementById('detailMeta');
+const detailDesc = document.getElementById('detailDesc');
+const proofGallery = document.getElementById('proofGallery');
+const statusControls = document.getElementById('statusControls');
+const toggleMapBtn = document.getElementById('toggleMapBtn');
+const mapContainer = document.getElementById('mapContainer');
+
+const imgModal = document.getElementById('imgModal');
+const modalImg = document.getElementById('modalImg');
+
+const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+if (!currentUser || currentUser.role !== 'official') {
+  statusIndicator.textContent = 'No official logged in (check localStorage).';
+  statusIndicator.style.color = 'orange';
+  officialBarangay.textContent = currentUser?.barangay || '—';
+} else {
+  officialBarangay.textContent = currentUser.barangay || '—';
+}
+
+// helper: nicer timestamp
+function fmtTimestamp(ts) {
+  if (!ts) return '';
+  if (ts.toDate) return ts.toDate().toLocaleString();
+  try { const d = new Date(ts); if (!isNaN(d)) return d.toLocaleString(); } catch(e) {}
+  return ts;
+}
+
+// --- show detail function with lazy-load Google Maps ---
+function showDetail(r) {
+  detailTitle.textContent = r.issue || '—';
+  detailSub.textContent = `Reported by ${r.author || '—'} on ${fmtTimestamp(r.timestamp)}`;
+  detailStatus.textContent = r.status || '—';
+  detailMeta.textContent = `${r.street || ''}, ${r.barangay || ''}`.replace(/^,|,$/g,'');
+  detailDesc.textContent = r.description || '—';
+
+  // proof gallery
+  proofGallery.innerHTML = '';
+  if (r.proofs?.length) {
+    r.proofs.forEach(url=>{
+      const thumb = document.createElement('div'); thumb.className='thumb'; 
+      const img = document.createElement('img'); img.src=url; img.alt='proof';
+      img.onclick = () => { modalImg.src = url; imgModal.style.display='flex'; };
+      thumb.appendChild(img); proofGallery.appendChild(thumb);
+    });
   }
 
-  // ✅ Move logout listener here — before Firestore queries
-  const logoutBtn = document.getElementById("logoutBtn");
-  logoutBtn.addEventListener("click", () => {
-    localStorage.removeItem("currentUser");
-    window.location.href = "index.html";
+  // status controls
+  statusControls.innerHTML='';
+  ['Pending','In Progress','Resolved'].forEach(s=>{
+    const btn = document.createElement('button'); btn.className='btn secondary';
+    btn.textContent=s;
+    btn.onclick = async ()=>{
+      if(confirm(`Mark report as "${s}"?`)){
+        await updateDoc(doc(db,'reports',r.id), {status:s});
+      }
+    };
+    statusControls.appendChild(btn);
   });
 
-  // --- Firestore Fetch ---
-  try {
-    const reportRef = collection(db, "reports");
-    const snapshot = await getDocs(reportRef);
-    const reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    console.log("✅ Reports loaded:", reports);
-    const conn = document.getElementById("connectionStatus");
-    conn.textContent = "Connected";
-    conn.classList.add("connected");
-
-    // --- Summary + Table + Charts ---
-    const totalReports = document.getElementById("totalReports");
-    const pendingCount = document.getElementById("pendingCount");
-    const inProgressCount = document.getElementById("inProgressCount");
-    const resolvedCount = document.getElementById("resolvedCount");
-    const tableBody = document.querySelector("#reportTable tbody");
-    const filter = document.getElementById("barangayFilter");
-
-    function updateSummary() {
-      totalReports.textContent = reports.length;
-      pendingCount.textContent = reports.filter(r => r.status === "Pending").length;
-      inProgressCount.textContent = reports.filter(r => r.status === "In Progress").length;
-      resolvedCount.textContent = reports.filter(r => r.status === "Resolved").length;
-    }
-
-    function loadReports(filterValue = "all") {
-      tableBody.innerHTML = "";
-      const filtered = reports.filter(r => filterValue === "all" || r.barangay === filterValue);
-      filtered.forEach(r => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${r.barangay || "—"}</td>
-          <td>${r.author || "N/A"}</td>
-          <td>${r.issueType || "Unknown"}</td>
-          <td>${r.status || "Pending"}</td>
-          <td>${r.timestamp ? new Date(r.timestamp.seconds ? r.timestamp.seconds * 1000 : r.timestamp).toLocaleString() : "—"}</td>
-        `;
-        tableBody.appendChild(row);
-      });
-    }
-
-    filter.addEventListener("change", e => loadReports(e.target.value));
-
-    const barangayChart = new Chart(document.getElementById("barangayChart"), {
-      type: "bar",
-      data: { labels: [], datasets: [{ label: "Reports per Barangay", backgroundColor: "#003b8e", data: [] }] }
-    });
-
-    const issueTypeChart = new Chart(document.getElementById("issueTypeChart"), {
-      type: "pie",
-      data: { labels: [], datasets: [{ label: "Issues", backgroundColor: ["#ff9800", "#4caf50", "#f44336", "#2196f3"], data: [] }] }
-    });
-
-    function updateCharts() {
-      const barangayCounts = {};
-      const issueTypeCounts = {};
-
-      reports.forEach(r => {
-        barangayCounts[r.barangay] = (barangayCounts[r.barangay] || 0) + 1;
-        issueTypeCounts[r.issueType] = (issueTypeCounts[r.issueType] || 0) + 1;
-      });
-
-      barangayChart.data.labels = Object.keys(barangayCounts);
-      barangayChart.data.datasets[0].data = Object.values(barangayCounts);
-      barangayChart.update();
-
-      issueTypeChart.data.labels = Object.keys(issueTypeCounts);
-      issueTypeChart.data.datasets[0].data = Object.values(issueTypeCounts);
-      issueTypeChart.update();
-    }
-
-    updateSummary();
-    loadReports();
-    updateCharts();
-  } catch (err) {
-    console.error("❌ Firestore error:", err);
-    const conn = document.getElementById("connectionStatus");
-    conn.textContent = "Offline";
-    conn.classList.remove("connected");
+  // --- Google Maps Embed Lazy Load ---
+  mapContainer.style.display = 'none';
+  toggleMapBtn.style.display = r.location ? 'inline-block' : 'none';
+  toggleMapBtn.textContent = 'Show Map 📍';
+  mapContainer.innerHTML = '';
+  if(r.location){
+    toggleMapBtn.onclick = ()=>{
+      if(mapContainer.style.display==='none'){
+        if(!mapContainer.querySelector('iframe')){
+          const barangayName = currentUser?.barangay || 'Santa Cruz';
+          const queryStr = encodeURIComponent(`${r.location}, ${barangayName}, Philippines`);
+          mapContainer.innerHTML=`
+            <iframe width="100%" height="250" style="border:0;border-radius:8px;margin-top:8px"
+              loading="lazy" allowfullscreen
+              referrerpolicy="no-referrer-when-downgrade"
+              src="https://www.google.com/maps?q=${queryStr}&output=embed">
+            </iframe>`;
+        }
+        mapContainer.style.display='block';
+        toggleMapBtn.textContent='Hide Map 📍';
+      } else {
+        mapContainer.style.display='none';
+        toggleMapBtn.textContent='Show Map 📍';
+      }
+    };
+  } else {
+    mapContainer.innerHTML='<div class="small" style="color:#888;margin-top:8px">📍 No location data available.</div>';
   }
+}
+
+// close modal
+imgModal.onclick=()=>{imgModal.style.display='none'; modalImg.src='';};
+
+// --- fetch & live updates ---
+let reportsCache = [];
+async function loadReports() {
+  const q = collection(db,'reports');
+  const snap = await getDocs(q);
+  reportsCache = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderReportList();
+}
+
+function renderReportList(){
+  const statusFilter = filterStatus.value;
+  const searchTerm = searchInput.value.toLowerCase();
+  const sortOrder = sortReports.value;
+
+  let list = reportsCache.slice();
+  if(statusFilter!=='All') list = list.filter(r=>r.status===statusFilter);
+  if(searchTerm) list = list.filter(r=>{
+    return (r.issue||'').toLowerCase().includes(searchTerm) ||
+           (r.street||'').toLowerCase().includes(searchTerm) ||
+           (r.author||'').toLowerCase().includes(searchTerm);
+  });
+  list.sort((a,b)=>sortOrder==='latest'? (b.timestamp?.seconds||0)-(a.timestamp?.seconds||0)
+                                     : (a.timestamp?.seconds||0)-(b.timestamp?.seconds||0));
+
+  reportList.innerHTML='';
+  if(!list.length){reportList.innerHTML='<li style="text-align:center;color:#888">No reports</li>'; return;}
+
+  list.forEach(r=>{
+    const li = document.createElement('li');
+    li.innerHTML=`<div>
+      <strong>${r.issue||'—'}</strong>
+      <div class="meta">${r.street||''} ${r.barangay||''}</div>
+      <div class="small">${r.timestamp?.toDate?.().toLocaleString()||''}</div>
+    </div>
+    <div style="text-align:right">
+      <span class="status-pill">${r.status||'—'}</span>
+    </div>`;
+    li.onclick=()=>showDetail(r);
+    reportList.appendChild(li);
+  });
+}
+
+// filters
+filterStatus.onchange=renderReportList;
+sortReports.onchange=renderReportList;
+searchInput.oninput=renderReportList;
+refreshBtn.onclick=loadReports;
+
+loadReports().then(()=>statusIndicator.textContent='Connected to Firestore');
 </script>
 </body>
 </html>
