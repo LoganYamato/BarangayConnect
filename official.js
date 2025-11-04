@@ -62,16 +62,14 @@ async function loadReports() {
     const card = document.createElement("div");
     card.classList.add("report-card");
     card.innerHTML = `
-      <strong>${report.issueType || "Unknown Issue"}</strong> —
-      ${report.barangay || ""}, ${report.location || ""}<br>
+      <strong>${report.issueType || "Unknown Issue"}</strong> — ${report.barangay || ""}, 
+      <strong>${report.location || "Unknown Location"}</strong><br>
       <em>${report.desc || report.description || "No description provided"}</em><br>
       <small>Author: ${report.author || "Unknown"}</small><br>
       <small>Status: ${report.status || "Pending"}</small><br>
       ${imgHTML}
       <br>
-      <button class="status-btn ${
-        report.status === "Resolved" ? "status-resolved" : "status-pending"
-      }" data-id="${reportId}">
+      <button class="status-btn ${report.status === "Resolved" ? "status-resolved" : "status-pending"}" data-id="${reportId}">
         ${report.status === "Resolved" ? "Resolved" : "Mark as Resolved"}
       </button>
     `;
@@ -102,17 +100,24 @@ async function loadReports() {
 document.addEventListener("DOMContentLoaded", loadReports);
 
 // === Logout ===
-const logoutBtn = document.getElementById("logoutBtn");
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", () => {
-    localStorage.removeItem("currentUser");
-    window.location.href = "index.html";
-  });
-}
+document.addEventListener("DOMContentLoaded", () => {
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      // Clear localStorage and sessionStorage for full cleanup
+      localStorage.removeItem("currentUser");
+      sessionStorage.clear();
+
+      // Redirect to login page
+      window.location.href = "index.html";
+    });
+  }
+});
 
 // ======================================================
 // 🖼️ Image Preview Modal Logic
 // ======================================================
+
 function setupImagePreview() {
   // Remove any previous modal
   const existing = document.getElementById("imgModal");
