@@ -6,116 +6,199 @@
   <title>BarangayConnect | Official Dashboard</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f7f9fc;
-      margin: 0;
-      padding: 0;
-    }
-    header.navbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #0052cc;
-      color: white;
-      padding: 10px 20px;
-    }
     .report-card {
-      background: white;
-      border-radius: 12px;
-      margin: 12px 0;
+      background: #f9f9f9;
+      border-radius: 10px;
+      margin: 10px 0;
       padding: 15px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .report-card img {
-      max-width: 160px;
-      border-radius: 10px;
-      margin-top: 10px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .report-card img:hover {
-      transform: scale(1.05);
+      max-width: 140px;
+      border-radius: 8px;
+      display: block;
+      margin-top: 8px;
     }
     .status-btn {
       padding: 6px 12px;
       border: none;
       border-radius: 6px;
+      margin-top: 8px;
       cursor: pointer;
       font-weight: bold;
-      margin-top: 10px;
     }
-    .status-pending { background: #ffcc00; color: #000; }
+    .status-pending { background: #ffcc00; }
     .status-resolved { background: #4CAF50; color: white; }
-    .filters {
-      display: flex;
-      gap: 10px;
-      margin: 15px 0;
+    .update-section {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #ddd;
     }
-    select {
-      padding: 6px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+    .update-section input[type="file"] {
+      margin-top: 4px;
     }
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 999;
-      left: 0;
-      top: 0;
+    .update-section textarea {
       width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.8);
-      justify-content: center;
-      align-items: center;
+      min-height: 50px;
+      resize: vertical;
+      padding: 5px;
+      margin-top: 4px;
     }
-    .modal img {
-      max-width: 90%;
-      max-height: 90%;
-      border-radius: 8px;
+    .send-update {
+      background: #1976D2;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 5px;
+      margin-top: 5px;
+      cursor: pointer;
     }
   </style>
 </head>
-
 <body>
   <header class="navbar">
-    <img src="logo.png" alt="Barangay Logo" class="logo" height="50">
+    <img src="logo.png" alt="Barangay Logo" class="logo">
     <h1>BarangayConnect — Official Dashboard</h1>
     <nav>
       <a href="official.html" class="active">Reports</a>
-      <a href="index.html" id="logoutBtn" style="color:white;">Logout</a>
+      <a href="index.html" id="logoutBtn">Logout</a>
     </nav>
   </header>
 
-  <main class="container" style="padding: 20px;">
+  <main class="container">
     <h2>Incoming Resident Reports</h2>
-
-    <div class="filters">
-      <select id="statusFilter">
-        <option value="All">All Statuses</option>
-        <option value="Pending">Pending</option>
-        <option value="Resolved">Resolved</option>
-      </select>
-      <select id="issueFilter">
-        <option value="All">All Issue Types</option>
-        <option value="Garbage">Garbage</option>
-        <option value="Road Damage">Road Damage</option>
-        <option value="Flooding">Flooding</option>
-        <option value="Crime">Crime</option>
-        <option value="Other">Other</option>
-      </select>
-    </div>
-
     <div id="reportsContainer"></div>
   </main>
 
   <footer><small>&copy; 2025 BarangayConnect</small></footer>
 
-  <div id="imageModal" class="modal">
-    <img id="modalImg" src="" alt="Preview">
-  </div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { 
+      getFirestore, collection, getDocs, updateDoc, doc, arrayUnion 
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-  <script type="module" src="official.js"></script>
-  <script type="module" src="official-sync.js"></script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
+      authDomain: "iss-bc.firebaseapp.com",
+      projectId: "iss-bc",
+      storageBucket: "iss-bc.firebasestorage.app",
+      messagingSenderId: "455122393981",
+      appId: "1:455122393981:web:bdf281da744767c0064a14"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function loadReports() {
+      const container = document.getElementById("reportsContainer");
+      container.innerHTML = "<p>Loading reports...</p>";
+
+      const querySnapshot = await getDocs(collection(db, "reports"));
+      container.innerHTML = "";
+
+      if (querySnapshot.empty) {
+        container.innerHTML = "<p>No reports available yet.</p>";
+        return;
+      }
+
+      querySnapshot.forEach((docSnap) => {
+        const report = docSnap.data();
+        const reportDiv = document.createElement("div");
+        reportDiv.className = "report-card";
+
+        const imgHTML = report.imageData 
+          ? `<img src="${report.imageData}" alt="Proof Image">`
+          : report.imageUrl 
+            ? `<img src="${report.imageUrl}" alt="Proof Image">`
+            : "";
+
+        const updatesHTML = (report.updates || [])
+          .map(up => `
+            <div class="resident-update">
+              <p><strong>Official Reply:</strong> ${up.text}</p>
+              ${up.image ? `<img src="${up.image}" alt="Update Image">` : ""}
+            </div>
+          `).join("");
+
+        reportDiv.innerHTML = `
+          <strong>${report.issueType}</strong> — ${report.location || ''}<br>
+          <em>${report.description || ''}</em><br>
+          <small>Author: ${report.author || 'Unknown'}</small><br>
+          <small>Status: ${report.status || 'Pending'}</small><br>
+          ${imgHTML}
+          ${updatesHTML}
+          <div class="update-section">
+            <textarea placeholder="Send an update..."></textarea>
+            <input type="file" accept="image/*">
+            <button class="send-update" data-id="${docSnap.id}">Send Update</button>
+          </div>
+          <button class="status-btn ${report.status === 'Resolved' ? 'status-resolved' : 'status-pending'}"
+            data-id="${docSnap.id}">
+            ${report.status === 'Resolved' ? 'Resolved' : 'Mark as Resolved'}
+          </button>
+        `;
+
+        container.appendChild(reportDiv);
+      });
+
+      // Handle updates
+      document.querySelectorAll(".send-update").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = btn.dataset.id;
+          const card = btn.closest(".report-card");
+          const textArea = card.querySelector("textarea");
+          const fileInput = card.querySelector("input[type='file']");
+          const text = textArea.value.trim();
+          let imageData = "";
+
+          if (fileInput.files[0]) {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+              imageData = e.target.result;
+              await pushUpdate(id, text, imageData);
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+          } else {
+            await pushUpdate(id, text, null);
+          }
+        });
+      });
+
+      // Handle status update
+      document.querySelectorAll(".status-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const id = btn.getAttribute("data-id");
+          await updateDoc(doc(db, "reports", id), { status: "Resolved" });
+          alert("Report marked as resolved!");
+          loadReports();
+        });
+      });
+    }
+
+    async function pushUpdate(reportId, text, image) {
+      if (!text && !image) return alert("Please enter a message or attach an image.");
+      const updateRef = doc(db, "reports", reportId);
+      await updateDoc(updateRef, {
+        updates: arrayUnion({
+          text: text || "",
+          image: image || "",
+          timestamp: new Date().toISOString()
+        })
+      });
+      alert("Update sent successfully!");
+      loadReports();
+    }
+
+    document.addEventListener("DOMContentLoaded", loadReports);
+
+    // Logout
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("currentUser");
+      window.location.href = "index.html";
+    });
+  </script>
 </body>
 </html>
