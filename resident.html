@@ -61,6 +61,13 @@
       .page-title{font-size:22px}
       .navbar{padding:0 12px}
     }
+    .disabled-link {
+  opacity: 0.6;
+  pointer-events: none;
+  text-decoration: none;
+  cursor: not-allowed;
+}
+
   </style>
 </head>
 <body>
@@ -149,7 +156,7 @@
     document.getElementById("logoutBtn").addEventListener("click", ()=>{
       localStorage.removeItem("currentUser"); window.location.href="index.html";
     });
-
+    
     const AREA_KEY = "SantaCruz-Makati";
     const ANN_KEY  = `bc_ann_${AREA_KEY}`;
     const DM_KEY   = (me,peer)=> `bc_dm_${AREA_KEY}_${[me,peer].sort().join("__")}`;
@@ -168,28 +175,7 @@
       add(item){ const all = AnnStore.list(); all.unshift(item); localStorage.setItem(ANN_KEY, JSON.stringify(all)); }
     };
 
-    // Dynamically show "Officials" link in navbar for authorized roles
-document.addEventListener("DOMContentLoaded", () => {
-  const allowedRoles = ["official", "captain", "lgu"]; // roles allowed to see the Officials page
-
-  if (allowedRoles.includes(currentUser?.role)) {
-    const officialsLink = document.createElement("a");
-    officialsLink.href = "official.html";
-    officialsLink.textContent = "Officials";
-
-    // Optional: make it appear before Logout instead of after
-    const navbarNav = document.querySelector(".navbar nav");
-    const logoutBtn = document.getElementById("logoutBtn");
-
-    navbarNav.insertBefore(officialsLink, logoutBtn);
-  }
-
-  // Continue with your existing page logic
-  renderAnnouncements();
-  fillContacts();
-  renderThread();
-  loadCharts();
-});
+    
 
     
     const DMStore = {
@@ -300,12 +286,41 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("healthDate").textContent = `Updated as of ${date}`;
     }
 
-    document.addEventListener("DOMContentLoaded", ()=>{
-      renderAnnouncements();
-      fillContacts();
-      renderThread();
-      loadCharts();
-    });
+   document.addEventListener("DOMContentLoaded", () => {
+  const navbarNav = document.querySelector(".navbar nav");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  // --- Disable "Report" link for non-residents ---
+  const reportLink = navbarNav.querySelector('a[href="report.html"]');
+  if (currentUser?.role !== "resident" && reportLink) {
+    reportLink.classList.add("disabled-link");
+    reportLink.title = "Only residents can file reports.";
+    reportLink.addEventListener("click", (e) => e.preventDefault());
+  }
+
+  // --- Add role-specific links ---
+  const roleLinks = {
+    official: { href: "official.html", text: "Officials" },
+    captain: { href: "staff.html", text: "Staff Panel" },
+    lgu: { href: "lgu.html", text: "Provincial LGU" }
+  };
+
+  const roleInfo = roleLinks[currentUser?.role];
+  if (roleInfo) {
+    const roleLink = document.createElement("a");
+    roleLink.href = roleInfo.href;
+    roleLink.textContent = roleInfo.text;
+    navbarNav.insertBefore(roleLink, logoutBtn);
+  }
+
+  // --- Continue with the rest of the dashboard setup ---
+  renderAnnouncements();
+  fillContacts();
+  renderThread();
+  loadCharts();
+});
+
+
   </script>
 </body>
 </html>
