@@ -109,11 +109,16 @@
         const reportDiv = document.createElement("div");
         reportDiv.className = "report-card";
 
-        const imgHTML = report.imageData 
-          ? `<img src="${report.imageData}" alt="Proof Image">`
-          : report.imageUrl 
-            ? `<img src="${report.imageUrl}" alt="Proof Image">`
-            : "";
+       const imgHTML = report.imageData
+  ? `<img src="${report.imageData}" alt="Proof Image">`
+  : report.imageUrl
+    ? `<img src="${report.imageUrl}" alt="Proof Image">`
+    : report.proofImage
+      ? `<img src="${report.proofImage}" alt="Proof Image">`
+      : report.photo
+        ? `<img src="${report.photo}" alt="Proof Image">`
+        : "";
+
 
         const updatesHTML = (report.updates || [])
           .map(up => `
