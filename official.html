@@ -3,61 +3,106 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Officials Dashboard | BarangayConnect</title>
+  <title>Barangay Officials Dashboard | BarangayConnect</title>
   <link rel="stylesheet" href="style.css" />
   <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      color: #333;
+    }
+    header {
+      background: #004aad;
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header .logo {
+      height: 50px;
+    }
+    nav a, nav button {
+      color: white;
+      text-decoration: none;
+      margin: 0 10px;
+      font-weight: 500;
+    }
+    nav button {
+      background: #ff4444;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    h2 {
+      text-align: center;
+      margin-top: 20px;
+      color: #004aad;
+    }
+    .report-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+      padding: 20px;
+    }
     .report-card {
-      background: #f9f9f9;
-      margin: 10px 0;
-      padding: 15px;
+      background: white;
       border-radius: 12px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 15px;
     }
     .report-card img {
-      display: block;
-      margin-top: 8px;
+      max-width: 100%;
       border-radius: 10px;
-      max-width: 180px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+      margin-top: 8px;
     }
     .status {
       font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 5px;
+      display: inline-block;
       margin-top: 8px;
     }
+    .status.Pending { background: #ffcc00; }
+    .status.Resolved { background: #4CAF50; color: white; }
+    .status.In\ Progress { background: #2196F3; color: white; }
   </style>
 </head>
 <body>
-  <header class="navbar">
-    <img src="logo.png" alt="Barangay Logo" class="logo">
-    <h1>BarangayConnect</h1>
+  <header>
+    <div>
+      <img src="logo.png" alt="Barangay Logo" class="logo">
+      <strong>BarangayConnect — Officials Dashboard</strong>
+    </div>
     <nav>
-      <a href="resident.html">Dashboard</a>
-      <a href="report.html">Report</a>
-      <a href="official.html" class="active">Officials</a>
-      <button id="logoutBtn" class="logout">Logout</button>
+      <a href="official.html" class="active">Reports</a>
+      <a href="official-announcements.html">Announcements</a>
+      <button id="logoutBtn">Logout</button>
     </nav>
   </header>
 
-  <main class="container">
-    <h2>Officials Dashboard</h2>
-    <section id="reportsSection">
-      <h3>Incoming Resident Reports</h3>
-      <div id="reportsContainer"></div>
-    </section>
+  <main>
+    <h2>Resident Reports</h2>
+    <section class="report-list" id="reportList"></section>
   </main>
 
-  <footer class="foot"><small>BarangayConnect — Officials Page</small></footer>
+  <footer style="text-align:center; padding:10px; color:#777;">
+    <small>BarangayConnect — Official View</small>
+  </footer>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, collection, getDocs } 
+    import { getFirestore, collection, getDocs, updateDoc, doc } 
       from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
+    // ✅ Same Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
       authDomain: "iss-bc.firebaseapp.com",
       projectId: "iss-bc",
-      storageBucket: "iss-bc.firebasestorage.app",
+      storageBucket: "iss-bc.appspot.com",
       messagingSenderId: "455122393981",
       appId: "1:455122393981:web:bdf281da744767c0064a14",
       measurementId: "G-6VQLV0PG81"
@@ -65,37 +110,71 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const reportsContainer = document.getElementById("reportsContainer");
 
+    const reportList = document.getElementById("reportList");
+
+    // 🔹 Load reports from Firestore
     async function loadReports() {
-      reportsContainer.innerHTML = "<p>Loading reports...</p>";
-      const snap = await getDocs(collection(db, "reports"));
-      reportsContainer.innerHTML = "";
+      reportList.innerHTML = "<p>Loading reports...</p>";
 
-      snap.forEach(doc => {
-        const r = doc.data();
-        const card = document.createElement("div");
-        card.className = "report-card";
+      try {
+        const snap = await getDocs(collection(db, "reports"));
+        if (snap.empty) {
+          reportList.innerHTML = "<p>No reports available.</p>";
+          return;
+        }
 
-        card.innerHTML = `
-          <h4>${r.issueType || "Unknown Issue"}</h4>
-          <p><strong>Barangay:</strong> ${r.barangay || "N/A"}</p>
-          <p><strong>Location:</strong> ${r.location || "N/A"}</p>
-          <p><strong>Description:</strong> ${r.description || r.desc || "No details provided"}</p>
-          ${r.imageData ? `<img src="${r.imageData}" alt="Report Image">` 
-          : r.imageUrl ? `<img src="${r.imageUrl}" alt="Report Image">` : ""}
-          <p><small>By: ${r.author || "Anonymous"} — ${r.timestamp ? new Date(r.timestamp.seconds * 1000).toLocaleString() : ""}</small></p>
-          <p class="status">Status: ${r.status || "Pending"}</p>
-        `;
-        reportsContainer.appendChild(card);
-      });
+        reportList.innerHTML = "";
+        snap.forEach((docSnap) => {
+          const report = docSnap.data();
+          const id = docSnap.id;
+          const card = document.createElement("div");
+          card.className = "report-card";
 
-      if (snap.empty) {
-        reportsContainer.innerHTML = "<p>No reports submitted yet.</p>";
+          // ✅ Support Base64 or normal URLs
+          const imageHTML = report.imageData
+            ? `<img src="${report.imageData}" alt="Report Image">`
+            : report.imageUrl
+            ? `<img src="${report.imageUrl}" alt="Report Image">`
+            : "";
+
+          card.innerHTML = `
+            <h3>${report.issueType || "Unknown Issue"}</h3>
+            <p><strong>Barangay:</strong> ${report.barangay || ""}</p>
+            <p><strong>Street:</strong> ${report.location || "N/A"}</p>
+            <p><strong>Reporter:</strong> ${report.author || "Anonymous"}</p>
+            <p>${report.description || report.desc || "(No description)"}</p>
+            ${imageHTML}
+            <p><span class="status ${report.status || 'Pending'}">${report.status || 'Pending'}</span></p>
+            <button class="resolveBtn" data-id="${id}" style="margin-top:10px;">Mark as Resolved</button>
+          `;
+          reportList.appendChild(card);
+        });
+
+        // 🔹 Add Resolve button functionality
+        document.querySelectorAll(".resolveBtn").forEach(btn => {
+          btn.addEventListener("click", async (e) => {
+            const id = e.target.dataset.id;
+            const ref = doc(db, "reports", id);
+            await updateDoc(ref, { status: "Resolved" });
+            alert("✅ Report marked as resolved.");
+            loadReports();
+          });
+        });
+
+      } catch (err) {
+        console.error("Error loading reports:", err);
+        reportList.innerHTML = "<p>Error loading reports. Check console.</p>";
       }
     }
 
     loadReports();
+
+    // 🔹 Logout button
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("currentUser");
+      window.location.href = "index.html";
+    });
   </script>
 </body>
 </html>
