@@ -113,11 +113,9 @@
   ? `<img src="${report.imageData}" alt="Proof Image">`
   : report.imageUrl
     ? `<img src="${report.imageUrl}" alt="Proof Image">`
-    : report.proofImage
-      ? `<img src="${report.proofImage}" alt="Proof Image">`
-      : report.photo
-        ? `<img src="${report.photo}" alt="Proof Image">`
-        : "";
+    : `<div style="margin-top:8px;color:#888;font-size:0.9em;display:flex;align-items:center;gap:6px;">
+         📷 <span>No image provided</span>
+       </div>`;
 
 
         const updatesHTML = (report.updates || [])
