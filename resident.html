@@ -161,19 +161,38 @@
     const ANN_KEY  = `bc_ann_${AREA_KEY}`;
     const DM_KEY   = (me,peer)=> `bc_dm_${AREA_KEY}_${[me,peer].sort().join("__")}`;
 
-    const AnnStore = {
-      list(){
-        const val = localStorage.getItem(ANN_KEY);
-        if (val) return JSON.parse(val);
-        const seed = [
-          {id:crypto.randomUUID(), title:"Barangay Assembly", body:"General assembly on Nov 10, 4:00 PM at Covered Court.", ts:Date.now()-1000*60*60*24*2},
-          {id:crypto.randomUUID(), title:"Waste Collection", body:"Schedule change this week: Tue & Fri, 6–9 AM.", ts:Date.now()-1000*60*60*6}
-        ];
-        localStorage.setItem(ANN_KEY, JSON.stringify(seed));
-        return seed;
-      },
-      add(item){ const all = AnnStore.list(); all.unshift(item); localStorage.setItem(ANN_KEY, JSON.stringify(all)); }
-    };
+// Announcements — now synced with Firestore
+import { getDocs, collection, addDoc, serverTimestamp, orderBy, query } 
+  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+const AnnStore = {
+  async list() {
+    try {
+      const q = query(collection(db, "announcements"), orderBy("timestamp", "desc"));
+      const snap = await getDocs(q);
+      return snap.docs.map(d => ({
+        id: d.id,
+        title: d.data().title,
+        body: d.data().body,
+        ts: d.data().timestamp?.toDate() || new Date()
+      }));
+    } catch (e) {
+      console.error("Error fetching announcements:", e);
+      return [];
+    }
+  },
+  async add(item) {
+    try {
+      await addDoc(collection(db, "announcements"), {
+        title: item.title,
+        body: item.body,
+        timestamp: serverTimestamp()
+      });
+    } catch (e) {
+      console.error("Error adding announcement:", e);
+    }
+  }
+};
 
     
 
@@ -196,25 +215,18 @@
     const annBody  = document.getElementById("annBody");
     const annPost  = document.getElementById("annPost");
 
-    function renderAnnouncements(){
-      annList.innerHTML = "";
-      AnnStore.list().forEach(a=>{
-        const el = document.createElement("article");
-        el.className = "ann";
-        el.innerHTML = `<h4>${a.title}</h4><time>${new Date(a.ts).toLocaleString()}</time><p style="margin:8px 0 0">${a.body}</p>`;
-        annList.appendChild(el);
-      });
-    }
-
-    if (currentUser?.role === "official") {
-      annForm.style.display = "grid";
-      annPost.addEventListener("click", ()=>{
-        const t = annTitle.value.trim(), b = annBody.value.trim();
-        if(!t || !b) return;
-        AnnStore.add({id:crypto.randomUUID(), title:t, body:b, ts:Date.now()});
-        annTitle.value=""; annBody.value=""; renderAnnouncements();
-      });
-    }
+    async function renderAnnouncements(){
+  annList.innerHTML = "<p>Loading announcements...</p>";
+  const list = await AnnStore.list();
+  annList.innerHTML = "";
+  list.forEach(a => {
+    const el = document.createElement("article");
+    el.className = "ann";
+    el.innerHTML = `<h4>${a.title}</h4><time>${new Date(a.ts).toLocaleString()}</time><p style="margin:8px 0 0">${a.body}</p>`;
+    annList.appendChild(el);
+  });
+  if (!list.length) annList.innerHTML = "<p>No announcements yet.</p>";
+}
 
     const knownContacts = (()=> {
       if (currentUser?.role === "official") {
