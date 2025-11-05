@@ -31,7 +31,7 @@
     .card{background:#eef5ff;border-radius:var(--radius);padding:24px 16px;text-align:center;color:#0b55b4;font-weight:800;box-shadow:var(--shadow)}
     .card small{display:block;margin-top:8px;color:#42536b;font-weight:600}
     .chat-top{display:flex;gap:8px;align-items:center}
-    .chat-top select,.chat-input input,.ann-form input,.ann-form textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;outline:none;background:#fff}
+    .chat-top select,.chat-input input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;outline:none;background:#fff}
     .chat-wrap{display:flex;flex-direction:column;height:520px}
     .chat-scroll{flex:1 1 auto;overflow:auto;padding-right:4px;display:flex;flex-direction:column;gap:10px;margin-top:10px}
     .bubble{max-width:84%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#f3f6fb;line-height:1.3}
@@ -44,16 +44,13 @@
     .ann{border:1px solid var(--line);border-radius:12px;padding:12px;background:#f9fbff}
     .ann h4{margin:0 0 4px 0}
     .ann time{font-size:.8rem;color:#64748b}
-    .ann-form{display:none;gap:8px;margin-top:8px}
     footer{margin:28px 0;text-align:center;color:#50607a}
     @media (max-width:1100px){
-      .shell{padding:0 12px}
       .grid{grid-template-columns:1fr;gap:16px}
       .sticky{position:static;top:auto}
-      .panel{box-shadow:0 4px 16px rgba(2,20,48,.06)}
       .chat-wrap{height:auto;max-height:unset}
       .chat-scroll{min-height:220px;max-height:50vh}
-      .chat-input{position:sticky;bottom:0;padding-bottom:env(safe-area-inset-bottom);background:var(--card);z-index:1}
+      .chat-input{position:sticky;bottom:0;background:var(--card);z-index:1}
       .stats{grid-template-columns:1fr 1fr}
     }
     @media (max-width:600px){
@@ -62,12 +59,10 @@
       .navbar{padding:0 12px}
     }
     .disabled-link {
-  opacity: 0.6;
-  pointer-events: none;
-  text-decoration: none;
-  cursor: not-allowed;
-}
-
+      opacity: 0.6;
+      pointer-events: none;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -84,6 +79,7 @@
     <h2 class="page-title" id="welcomeText">Welcome, Resident!</h2>
 
     <section class="grid">
+      <!-- Chat Panel -->
       <aside class="panel sticky" aria-label="Direct Messages">
         <div class="panel-header">Direct Messages</div>
         <div class="panel-body">
@@ -102,6 +98,7 @@
         </div>
       </aside>
 
+      <!-- Stats Panel -->
       <section>
         <div class="panel">
           <div class="panel-header">Community Statistics (Santa Cruz, Makati)</div>
@@ -116,16 +113,12 @@
         </div>
       </section>
 
+      <!-- Announcements -->
       <aside class="panel sticky" aria-label="Announcements">
         <div class="panel-header">Announcements</div>
         <div class="panel-body">
           <div id="annList" class="ann-list"></div>
-          <div id="annForm" class="ann-form">
-            <input id="annTitle" placeholder="Title"/>
-            <textarea id="annBody" rows="3" placeholder="What’s the update?"></textarea>
-            <button class="btn" id="annPost">Post</button>
-          </div>
-          <div class="meta" style="margin-top:8px">Local-only for now; swap to Firestore/API later.</div>
+          <div class="meta" style="margin-top:8px">🔄 Refresh to see the latest updates.</div>
         </div>
       </aside>
     </section>
@@ -147,101 +140,56 @@
       messagingSenderId: "455122393981",
       appId: "1:455122393981:web:bdf281da744767c0064a14"
     };
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
     if (!currentUser) { window.location.href="index.html"; }
     else { document.getElementById("welcomeText").textContent = `Welcome, ${currentUser.name || "Resident"}!`; }
+
     document.getElementById("logoutBtn").addEventListener("click", ()=>{
       localStorage.removeItem("currentUser"); window.location.href="index.html";
     });
-    
+
     const AREA_KEY = "SantaCruz-Makati";
     const ANN_KEY  = `bc_ann_${AREA_KEY}`;
     const DM_KEY   = (me,peer)=> `bc_dm_${AREA_KEY}_${[me,peer].sort().join("__")}`;
 
-// Announcements — now synced with Firestore
-import { getDocs, collection, addDoc, serverTimestamp, orderBy, query } 
-  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-
-const AnnStore = {
-  async list() {
-    try {
-      const q = query(collection(db, "announcements"), orderBy("timestamp", "desc"));
-      const snap = await getDocs(q);
-      return snap.docs.map(d => ({
-        id: d.id,
-        title: d.data().title,
-        body: d.data().body,
-        ts: d.data().timestamp?.toDate() || new Date()
-      }));
-    } catch (e) {
-      console.error("Error fetching announcements:", e);
-      return [];
-    }
-  },
-  async add(item) {
-    try {
-      await addDoc(collection(db, "announcements"), {
-        title: item.title,
-        body: item.body,
-        timestamp: serverTimestamp()
-      });
-    } catch (e) {
-      console.error("Error adding announcement:", e);
-    }
-  }
-};
-
-    
-
-    
-    const DMStore = {
-      list(peer){
-        const key = DM_KEY(currentUser.name||"Resident", peer);
-        return JSON.parse(localStorage.getItem(key) || "[]");
-      },
-      add(peer, msg){
-        const key = DM_KEY(currentUser.name||"Resident", peer);
-        const all = DMStore.list(peer); all.push(msg);
-        localStorage.setItem(key, JSON.stringify(all));
+    const AnnStore = {
+      list(){
+        const val = localStorage.getItem(ANN_KEY);
+        if (val) return JSON.parse(val);
+        const seed = [
+          {id:crypto.randomUUID(), title:"Barangay Assembly", body:"General assembly on Nov 10, 4:00 PM at Covered Court.", ts:Date.now()-1000*60*60*24*2},
+          {id:crypto.randomUUID(), title:"Waste Collection", body:"Schedule change this week: Tue & Fri, 6–9 AM.", ts:Date.now()-1000*60*60*6}
+        ];
+        localStorage.setItem(ANN_KEY, JSON.stringify(seed));
+        return seed;
       }
     };
 
+    const DMStore = {
+      list(peer){ const key = DM_KEY(currentUser.name||"Resident", peer); return JSON.parse(localStorage.getItem(key) || "[]"); },
+      add(peer, msg){ const key = DM_KEY(currentUser.name||"Resident", peer); const all = DMStore.list(peer); all.push(msg); localStorage.setItem(key, JSON.stringify(all)); }
+    };
+
     const annList = document.getElementById("annList");
-    const annForm = document.getElementById("annForm");
-    const annTitle = document.getElementById("annTitle");
-    const annBody  = document.getElementById("annBody");
-    const annPost  = document.getElementById("annPost");
+    function renderAnnouncements(){
+      annList.innerHTML = "";
+      AnnStore.list().forEach(a=>{
+        const el = document.createElement("article");
+        el.className = "ann";
+        el.innerHTML = `<h4>${a.title}</h4><time>${new Date(a.ts).toLocaleString()}</time><p style="margin:8px 0 0">${a.body}</p>`;
+        annList.appendChild(el);
+      });
+    }
 
-    async function renderAnnouncements(){
-  annList.innerHTML = "<p>Loading announcements...</p>";
-  const list = await AnnStore.list();
-  annList.innerHTML = "";
-  list.forEach(a => {
-    const el = document.createElement("article");
-    el.className = "ann";
-    el.innerHTML = `<h4>${a.title}</h4><time>${new Date(a.ts).toLocaleString()}</time><p style="margin:8px 0 0">${a.body}</p>`;
-    annList.appendChild(el);
-  });
-  if (!list.length) annList.innerHTML = "<p>No announcements yet.</p>";
-}
-
-    const knownContacts = (()=> {
-      if (currentUser?.role === "official") {
-        return [
-          {id:"resident1", name:"Resident One"},
-          {id:"resident2", name:"Resident Two"},
-          {id:"resident3", name:"Resident Three"}
-        ];
-      }
-      return [
-        {id:"desk", name:"Barangay Help Desk"},
-        {id:"captain", name:"Brgy. Captain"},
-        {id:"health", name:"Health Officer"}
-      ];
-    })();
+    const knownContacts = [
+      {id:"desk", name:"Barangay Help Desk"},
+      {id:"captain", name:"Brgy. Captain"},
+      {id:"health", name:"Health Officer"}
+    ];
 
     const peerSel   = document.getElementById("peer");
     const chatScroll= document.getElementById("chatScroll");
@@ -298,41 +246,17 @@ const AnnStore = {
       document.getElementById("healthDate").textContent = `Updated as of ${date}`;
     }
 
-   document.addEventListener("DOMContentLoaded", () => {
-  const navbarNav = document.querySelector(".navbar nav");
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  // --- Disable "Report" link for non-residents ---
-  const reportLink = navbarNav.querySelector('a[href="report.html"]');
-  if (currentUser?.role !== "resident" && reportLink) {
-    reportLink.classList.add("disabled-link");
-    reportLink.title = "Only residents can file reports.";
-    reportLink.addEventListener("click", (e) => e.preventDefault());
-  }
-
-  // --- Add role-specific links ---
-  const roleLinks = {
-    official: { href: "official.html", text: "Officials" },
-    captain: { href: "staff.html", text: "Staff Panel" },
-    lgu: { href: "lgu.html", text: "Provincial LGU" }
-  };
-
-  const roleInfo = roleLinks[currentUser?.role];
-  if (roleInfo) {
-    const roleLink = document.createElement("a");
-    roleLink.href = roleInfo.href;
-    roleLink.textContent = roleInfo.text;
-    navbarNav.insertBefore(roleLink, logoutBtn);
-  }
-
-  // --- Continue with the rest of the dashboard setup ---
-  renderAnnouncements();
-  fillContacts();
-  renderThread();
-  loadCharts();
-});
-
-
+    document.addEventListener("DOMContentLoaded", () => {
+      const reportLink = document.querySelector('a[href="report.html"]');
+      if (currentUser?.role !== "resident" && reportLink) {
+        reportLink.classList.add("disabled-link");
+        reportLink.title = "Only residents can file reports.";
+      }
+      renderAnnouncements();
+      fillContacts();
+      renderThread();
+      loadCharts();
+    });
   </script>
 </body>
 </html>
