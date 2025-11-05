@@ -1,448 +1,318 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Official Dashboard — BarangayConnect</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Barangay Officials Dashboard | BarangayConnect</title>
   <style>
     :root {
-      --blue: #1e5bb8;
-      --green: #16a34a;
-      --muted: #f4f6fb;
-      --card: #fff;
-      --text: #0f172a;
-    }
-    * {
-      box-sizing: border-box;
+      --brand: #0b55b4;
+      --bg: #f7f9fc;
+      --card: #ffffff;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #e6ebf2;
+      --radius: 14px;
+      --shadow: 0 8px 24px rgba(2, 20, 48, 0.08);
     }
     body {
       margin: 0;
-      font-family: system-ui, Segoe UI, Roboto, Arial;
-      background: var(--muted);
-      color: var(--text);
+      background: var(--bg);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
     }
-    header {
-      background: linear-gradient(90deg, var(--blue), #174a95);
-      color: white;
-      padding: 14px 18px;
+    header.navbar {
+      height: 60px;
+      background: var(--brand);
+      color: #fff;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+      gap: 16px;
+      padding: 0 20px;
     }
-    header .brand {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-    }
-    header h1 {
-      font-size: 18px;
+    header.navbar h1 {
+      font-size: 20px;
       margin: 0;
+      font-weight: 800;
     }
-    #logoutBtn {
-      background: #dc3545;
-      border: 0;
-      color: white;
-      padding: 8px 12px;
-      border-radius: 8px;
+    header.navbar nav {
+      margin-left: auto;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .navbar a, .logout {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .logout {
+      border: none;
+      background: transparent;
       cursor: pointer;
     }
-    main {
-      display: grid;
-      grid-template-columns: 360px 1fr;
-      gap: 18px;
-      padding: 18px;
+    .shell {
       max-width: 1200px;
-      margin: 18px auto;
+      margin: 24px auto;
+      padding: 0 16px;
     }
-    @media (max-width: 900px) {
-      main {
-        grid-template-columns: 1fr;
-        padding: 12px;
-      }
+    .page-title {
+      font-size: 26px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
     }
     .panel {
       background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel-header {
+      background: var(--brand);
+      color: #fff;
+      padding: 12px 14px;
+      font-weight: 800;
+    }
+    .panel-body {
+      padding: 14px;
+    }
+    .report {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 0;
+    }
+    .report:last-child {
+      border-bottom: none;
+    }
+    .report img {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 8px;
+    }
+    .report small {
+      display: block;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .ann-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .ann {
+      border: 1px solid var(--line);
       border-radius: 12px;
       padding: 12px;
-      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+      background: #f9fbff;
     }
-    .filter-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
+    .ann h4 {
+      margin: 0 0 4px 0;
     }
-    .filter-row select, .filter-row input {
-      padding: 8px;
-      border-radius: 8px;
-      border: 1px solid #e6eefc;
+    .ann time {
+      font-size: 0.8rem;
+      color: var(--muted);
     }
-    #reportList {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      max-height: 72vh;
-      overflow: auto;
-    }
-    #reportList li {
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      border: 1px solid #eef3ff;
-      cursor: pointer;
+    .ann-form {
       display: grid;
-      grid-template-columns: 1fr 120px;
-      gap: 10px;
+      gap: 8px;
+      margin-top: 10px;
     }
-    #reportList li:hover {
-      background: #f8fbff;
-    }
-    #reportList li .meta {
-      font-size: 13px;
-      color: #516179;
-    }
-    .status-pill {
-      display: inline-block;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid #e6eefc;
+    .ann-form input,
+    .ann-form textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
       background: #fff;
+      font-family: inherit;
     }
     .btn {
-      background: var(--blue);
-      color: white;
-      border: 0;
-      padding: 8px 10px;
-      border-radius: 8px;
+      background: var(--brand);
+      color: #fff;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 800;
       cursor: pointer;
     }
-    .btn.secondary {
-      background: #fff;
-      color: var(--blue);
-      border: 1px solid var(--blue);
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
-    .small {
-      font-size: 13px;
-      color: #516179;
-    }
-    .thumb img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 6px;
-    }
-    /* modal */
-    #imgModal {
-      display: none;
-      position: fixed;
-      z-index: 9999;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      align-items: center;
-      justify-content: center;
-    }
-    #imgModal img {
-      max-width: 92%;
-      max-height: 92%;
-      border-radius: 8px;
+    footer {
+      text-align: center;
+      margin: 30px 0;
+      color: #50607a;
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="brand">
-      <img src="logo.png" alt="Barangay Logo" class="logo" style="width:36px;height:36px;object-fit:contain">
-      <div>
-        <h1>BarangayConnect — Official Dashboard</h1>
-        <div class="small" id="subHeader">Barangay — <span id="officialBarangay">—</span></div>
-      </div>
-    </div>
-    <div>
-      <a href="resident.html"> Resident Reports</a>
-      <button id="logoutBtn">Logout</button>
-    </div>
+  <header class="navbar">
+    <h1>BarangayConnect</h1>
+    <nav>
+      <a href="official.html">Dashboard</a>
+      <a href="resident.html">Residents</a>
+      <button id="logoutBtn" class="logout">Logout</button>
+    </nav>
   </header>
-  <main>
-    <aside class="panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <h3 style="margin:0">Reports</h3>
-        <div class="small">Live / Firestore</div>
+
+  <main class="shell">
+    <h2 class="page-title" id="welcomeText">Welcome, Official!</h2>
+
+    <section class="grid">
+      <!-- Reports Panel -->
+      <div class="panel">
+        <div class="panel-header">Resident Reports</div>
+        <div class="panel-body" id="reportList">Loading reports...</div>
       </div>
-      <div class="filter-row">
-        <select id="filterStatus" title="Filter by status">
-          <option value="All">All statuses</option>
-          <option value="Pending">Pending</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Resolved">Resolved</option>
-        </select>
-        <select id="sortReports" title="Sort">
-          <option value="latest">Latest first</option>
-          <option value="oldest">Oldest first</option>
-        </select>
-        <input id="searchInput" placeholder="Search issue / street / author" style="flex:1" />
-        <button id="refreshBtn" class="btn secondary">⟳</button>
-      </div>
-      <div id="statusIndicator" class="small" style="text-align:center;margin:6px 0;color:#16a34a">Connecting to Firestore...</div>
-      <ul id="reportList" aria-live="polite"></ul>
-    </aside>
-    <section class="panel">
-      <h2 id="detailTitle" style="margin:0">Select a report</h2>
-      <div class="small" id="detailSub" style="margin-bottom:8px">Click a report from the list to view details.</div>
-      <div id="detailArea">
-        <div class="small" style="margin-bottom:8px"><span class="status-pill" id="detailStatus">—</span></div>
-        <div id="detailMeta" class="small" style="margin-bottom:8px">—</div>
-        <div id="detailDesc" style="margin-bottom:12px;font-size:15px;color:#243240">—</div>
-        <div id="proofGallery" style="display:flex;gap:8px;flex-wrap:wrap"></div>
-        <div id="statusControls" style="margin-top:14px;display:flex;gap:8px"></div>
-      </div>
+
+      <!-- Announcements Panel -->
+      <aside class="panel">
+        <div class="panel-header">Post Announcements</div>
+        <div class="panel-body">
+          <div id="annList" class="ann-list"></div>
+          <div class="ann-form">
+            <input id="annTitle" placeholder="Title" />
+            <textarea id="annBody" rows="3" placeholder="Write announcement..."></textarea>
+            <button id="annPost" class="btn">Post</button>
+          </div>
+        </div>
+      </aside>
     </section>
   </main>
-  <!-- image modal -->
-  <div id="imgModal"><img id="modalImg" alt="preview"></div>
-  <!-- main logic -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, query, where, orderBy, onSnapshot, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // Firebase config
+  <footer>
+    <small>BarangayConnect — Official Dashboard (Santa Cruz, Makati)</small>
+  </footer>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      addDoc,
+      orderBy,
+      query,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
       authDomain: "iss-bc.firebaseapp.com",
       projectId: "iss-bc",
       storageBucket: "iss-bc.firebasestorage.app",
       messagingSenderId: "455122393981",
-      appId: "1:455122393981:web:bdf281da744767c0064a14",
+      appId: "1:455122393981:web:bdf281da744767c0064a14"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    window.db = db; // handy for console debug
 
-    // UI refs
-    const reportList = document.getElementById('reportList');
-    const statusIndicator = document.getElementById('statusIndicator');
-    const filterStatus = document.getElementById('filterStatus');
-    const sortReports = document.getElementById('sortReports');
-    const searchInput = document.getElementById('searchInput');
-    const refreshBtn = document.getElementById('refreshBtn');
-    const officialBarangay = document.getElementById('officialBarangay');
-    const detailTitle = document.getElementById('detailTitle');
-    const detailSub = document.getElementById('detailSub');
-    const detailStatus = document.getElementById('detailStatus');
-    const detailMeta = document.getElementById('detailMeta');
-    const detailDesc = document.getElementById('detailDesc');
-    const proofGallery = document.getElementById('proofGallery');
-    const statusControls = document.getElementById('statusControls');
-    const imgModal = document.getElementById('imgModal');
-    const modalImg = document.getElementById('modalImg');
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    if (!currentUser) window.location.href = "index.html";
+    else document.getElementById("welcomeText").textContent = `Welcome, ${currentUser.name || "Official"}!`;
 
-    // current user from localStorage (existing flow)
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    if (!currentUser || currentUser.role !== 'official') {
-      // keep safe — don't redirect in debug sessions; show indicator
-      statusIndicator.textContent = 'No official logged in (check localStorage).';
-      statusIndicator.style.color = 'orange';
-      officialBarangay.textContent = currentUser?.barangay || '—';
-    } else {
-      officialBarangay.textContent = currentUser.barangay || '—';
-      console.log('[official-debug] Logged as', currentUser.name, currentUser.email, 'barangay:', currentUser.barangay);
-    }
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("currentUser");
+      window.location.href = "index.html";
+    });
 
-    // helper: nicer timestamp function
-    function fmtTimestamp(ts) {
-      if (!ts) return '';
-      // support Firestore Timestamp objects or ISO strings
-      if (ts.toDate) return ts.toDate().toLocaleString();
+    // ============= Reports =============
+    async function loadReports() {
+      const list = document.getElementById("reportList");
+      list.innerHTML = "<p>Loading reports...</p>";
       try {
-        const d = new Date(ts);
-        if (!isNaN(d)) return d.toLocaleString();
-      } catch {}
-      return String(ts);
-    }
-
-    // query builder (adds status where if selected)
-    function buildQuery() {
-      const barangay = currentUser?.barangay || 'Santa Cruz';
-      const statusVal = filterStatus.value;
-      const order = sortReports.value === 'latest' ? 'desc' : 'asc';
-      const coll = collection(db, 'reports');
-      if (statusVal && statusVal !== 'All') {
-        return query(coll, where('barangay', '==', barangay), where('status', '==', statusVal), orderBy('timestamp', order));
-      }
-      return query(coll, where('barangay', '==', barangay), orderBy('timestamp', order));
-    }
-
-    // keep local cache for searching client-side
-    let cached = [];
-    let unsubscribe = null;
-
-    function renderList(list) {
-      reportList.innerHTML = '';
-      if (!list.length) {
-        reportList.innerHTML = '<li style="text-align:center;color:#666">No reports found.</li>';
-        clearDetail();
-        return;
-      }
-      list.forEach(r => {
-        const li = document.createElement('li');
-        li.dataset.id = r.id;
-        const thumbHtml = (r.imageData || r.imageBase64 || r.imageUrl) ? 
-          `<div class="thumb" style="width:120px;height:80px;overflow:hidden"><img src="${r.imageData||r.imageBase64||r.imageUrl}" alt="thumb"></div>` :
-          `<div style="width:120px;height:80px;display:grid;place-items:center;color:#9aa8c7">No image</div>`;
-        li.innerHTML = `<div>
-          <strong>${r.issueType || 'Unknown'}</strong>
-          <div class="meta">${r.location || ''} • ${r.author || 'Unknown'}</div>
-          <div class="meta">Status: <span class="status-pill">${r.status || 'Pending'}</span></div>
-          <div class="meta" style="margin-top:6px;color:#334155">${(r.desc || r.description || '').slice(0, 140)}${(r.desc||r.description||'').length > 140 ? '…' : ''}</div>
-          <div class="meta" style="margin-top:6px">${fmtTimestamp(r.timestamp)}</div>
-        </div>
-        ${thumbHtml}`;
-        li.addEventListener('click', () => showDetail(r.id));
-        reportList.appendChild(li);
-      });
-    }
-
-    function clearDetail() {
-      detailTitle.textContent = 'Select a report';
-      detailSub.textContent = 'Click a report from the list to view details.';
-      detailStatus.textContent = '—';
-      detailMeta.textContent = '';
-      detailDesc.textContent = '—';
-      proofGallery.innerHTML = '';
-      statusControls.innerHTML = '';
-    }
-
-    function showDetail(id) {
-      const r = cached.find(x => x.id === id);
-      if (!r) return;
-      detailTitle.textContent = `${r.issueType || 'Report'} — ${r.location || ''}`;
-      detailStatus.textContent = r.status || 'Pending';
-      detailMeta.textContent = `${r.author || 'Unknown'} • ${fmtTimestamp(r.timestamp)}`;
-      detailDesc.textContent = r.desc || r.description || 'No description provided.';
-      proofGallery.innerHTML = '';
-      const images = [];
-      if (r.imageData) images.push(r.imageData);
-      if (r.imageBase64) images.push(r.imageBase64);
-      if (r.imageUrl) images.push(r.imageUrl);
-      images.forEach(src => {
-        const b = document.createElement('div');
-        b.style.width = '120px';
-        b.style.height = '90px';
-        b.style.overflow = 'hidden';
-        b.style.borderRadius = '8px';
-        b.style.cursor = 'pointer';
-        b.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover">`;
-        b.addEventListener('click', () => { modalImg.src = src; imgModal.style.display = 'flex'; });
-        proofGallery.appendChild(b);
-      });
-      // status buttons
-      statusControls.innerHTML = '';
-      const make = (txt, color, newStatus) => {
-        const btn = document.createElement('button');
-        btn.className = 'btn';
-        btn.textContent = txt;
-        btn.style.background = color;
-        btn.addEventListener('click', async () => {
-          try {
-            await updateDoc(doc(db, 'reports', id), { status: newStatus });
-            statusIndicator.textContent = `Updated to "${newStatus}"`;
-            // update cache immediately
-            const idx = cached.findIndex(x => x.id === id);
-            if (idx !== -1) { cached[idx].status = newStatus; }
-            renderList(cached);
-            showDetail(id); // refresh detail
-          } catch (err) {
-            console.error('Update failed', err);
-            statusIndicator.textContent = 'Update failed — check console';
-          }
+        const snap = await getDocs(collection(db, "reports"));
+        if (snap.empty) {
+          list.innerHTML = "<p>No reports yet.</p>";
+          return;
+        }
+        list.innerHTML = "";
+        snap.forEach((doc) => {
+          const r = doc.data();
+          const el = document.createElement("div");
+          el.className = "report";
+          el.innerHTML = `
+            <strong>${r.issueType || "Unknown Issue"}</strong> — <em>${r.status || "Pending"}</em>
+            <small>${r.location || "No location"}</small>
+            <p>${r.desc || r.description || "No description provided"}</p>
+            ${r.imageUrl ? `<img src="${r.imageUrl}" alt="Report Image"/>` : ""}
+            <small>By ${r.author || "Anonymous"} • ${new Date(r.timestamp?.toDate ? r.timestamp.toDate() : Date.now()).toLocaleString()}</small>
+          `;
+          list.appendChild(el);
         });
-        return btn;
-      };
-      statusControls.appendChild(make('Mark Pending', '#6b7280', 'Pending'));
-      statusControls.appendChild(make('Mark In Progress', '#1e5bb8', 'In Progress'));
-      statusControls.appendChild(make('Mark Resolved', '#16a34a', 'Resolved'));
-    }
-
-    // attach listener to Firestore query
-    function attachListener() {
-      if (unsubscribe) try { unsubscribe(); } catch(e) {}
-      let qRef;
-      try {
-        qRef = buildQuery();
       } catch (err) {
-        console.error('Query build failed', err);
-        statusIndicator.textContent = 'Query error — check console';
-        return;
+        console.error("Error loading reports:", err);
+        list.innerHTML = "<p>Failed to load reports.</p>";
       }
-      statusIndicator.textContent = 'Listening (Firestore)...';
-      unsubscribe = onSnapshot(qRef, snap => {
-        cached = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderList(cached);
-        statusIndicator.textContent = '✅ Firestore Live Connected';
-      }, err => {
-        console.error('onSnapshot error', err);
-        statusIndicator.textContent = '❌ Firestore error — using local fallback';
-        // local fallback (if present)
-        cached = JSON.parse(localStorage.getItem('reports') || '[]').map((r, i) => ({ id: r.id || 'local-' + i, ...r }));
-        renderList(cached);
-      });
     }
 
-    // initial load (getDocs + attach listener)
-    async function initialLoad() {
+    // ============= Announcements =============
+    const annList = document.getElementById("annList");
+    const annTitle = document.getElementById("annTitle");
+    const annBody = document.getElementById("annBody");
+    const annPost = document.getElementById("annPost");
+
+    async function renderAnnouncements() {
+      annList.innerHTML = "<p>Loading announcements...</p>";
       try {
-        const qRef = buildQuery();
-        statusIndicator.textContent = 'Fetching initial snapshot...';
-        const snap = await getDocs(qRef);
-        cached = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderList(cached);
-        statusIndicator.textContent = '✅ Firestore initial load OK';
-      } catch (err) {
-        console.error('Initial getDocs failed', err);
-        statusIndicator.textContent = 'Initial Firestore load failed; using local data';
-        cached = JSON.parse(localStorage.getItem('reports') || '[]').map((r, i) => ({ id: r.id || 'local-' + i, ...r }));
-        renderList(cached);
+        const q = query(collection(db, "announcements"), orderBy("timestamp", "desc"));
+        const snap = await getDocs(q);
+        annList.innerHTML = "";
+        if (snap.empty) {
+          annList.innerHTML = "<p>No announcements yet.</p>";
+          return;
+        }
+        snap.forEach((doc) => {
+          const a = doc.data();
+          const el = document.createElement("article");
+          el.className = "ann";
+          el.innerHTML = `
+            <h4>${a.title}</h4>
+            <time>${a.timestamp?.toDate ? a.timestamp.toDate().toLocaleString() : "—"}</time>
+            <p>${a.body}</p>
+          `;
+          annList.appendChild(el);
+        });
+      } catch (e) {
+        console.error("Error loading announcements:", e);
+        annList.innerHTML = "<p>Failed to load announcements.</p>";
       }
-      attachListener();
     }
 
-    // search input (client-side)
-    searchInput.addEventListener('input', () => {
-      const q = searchInput.value.trim().toLowerCase();
-      if (!q) {
-        renderList(cached);
-        return;
+    annPost.addEventListener("click", async () => {
+      const title = annTitle.value.trim();
+      const body = annBody.value.trim();
+      if (!title || !body) return;
+      annPost.disabled = true;
+      annPost.textContent = "Posting...";
+      try {
+        await addDoc(collection(db, "announcements"), {
+          title,
+          body,
+          author: currentUser?.name || "Official",
+          timestamp: serverTimestamp()
+        });
+        annTitle.value = "";
+        annBody.value = "";
+        await renderAnnouncements();
+      } catch (err) {
+        console.error("Error posting announcement:", err);
+      } finally {
+        annPost.disabled = false;
+        annPost.textContent = "Post";
       }
-      const filtered = cached.filter(r => {
-        return (r.issueType || '').toLowerCase().includes(q) || 
-               (r.location || '').toLowerCase().includes(q) || 
-               (r.author || '').toLowerCase().includes(q) || 
-               (r.desc || r.description || '').toLowerCase().includes(q);
-      });
-      renderList(filtered);
     });
 
-    // reattach on filter/sort changes
-    filterStatus.addEventListener('change', initialLoad);
-    sortReports.addEventListener('change', initialLoad);
-    refreshBtn.addEventListener('click', initialLoad);
-
-    // image modal close
-    imgModal.addEventListener('click', () => imgModal.style.display = 'none');
-
-    // logout
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      localStorage.removeItem('currentUser');
-      window.location.href = 'index.html';
-    });
-
-    // kickoff initialLoad();
+    // ============= Initialize =============
+    loadReports();
+    renderAnnouncements();
   </script>
 </body>
 </html>
