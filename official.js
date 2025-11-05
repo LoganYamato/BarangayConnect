@@ -1,10 +1,14 @@
 // ======================================================
-// BarangayConnect | Official Dashboard Logic
+// BarangayConnect | Official Dashboard (Optimized Unified Build)
 // ======================================================
 
 // === Firebase Imports ===
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, getDocs, updateDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { 
+  initializeApp 
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { 
+  getFirestore, collection, getDocs, updateDoc, doc, query, orderBy 
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 // === Firebase Config ===
 const firebaseConfig = {
@@ -13,7 +17,8 @@ const firebaseConfig = {
   projectId: "iss-bc",
   storageBucket: "iss-bc.firebasestorage.app",
   messagingSenderId: "455122393981",
-  appId: "1:455122393981:web:bdf281da744767c0064a14"
+  appId: "1:455122393981:web:bdf281da744767c0064a14",
+  measurementId: "G-6VQLV0PG81"
 };
 
 // === Initialize Firebase ===
@@ -21,63 +26,83 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // === DOM Elements ===
-const reportsContainer = document.getElementById("reportsContainer");
+const reportList = document.getElementById("reportList");
+const logoutBtn = document.getElementById("logoutBtn");
 
 // === Load Reports ===
 async function loadReports() {
-  reportsContainer.innerHTML = "<p>Loading reports...</p>";
+  if (!reportList) return console.warn("❗ Element #reportList not found.");
 
-  const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
-  const snap = await getDocs(q);
+  reportList.innerHTML = "<p>Loading reports...</p>";
 
-  reportsContainer.innerHTML = "";
+  try {
+    // Fetch reports ordered by timestamp
+    const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
+    const querySnapshot = await getDocs(q);
 
-  if (snap.empty) {
-    reportsContainer.innerHTML = "<p>No reports available.</p>";
-    return;
+    if (querySnapshot.empty) {
+      reportList.innerHTML = "<p>No reports available.</p>";
+      return;
+    }
+
+    reportList.innerHTML = "";
+
+    querySnapshot.forEach((docSnap) => {
+      const report = docSnap.data();
+      const reportId = docSnap.id;
+
+      // Handle multiple possible image sources
+      const imgHTML =
+        report.imageBase64
+          ? `<img src="${report.imageBase64}" class="previewImg" alt="Proof Image">`
+          : report.imageData
+          ? `<img src="${report.imageData}" class="previewImg" alt="Proof Image">`
+          : report.imageUrl
+          ? `<img src="${report.imageUrl}" class="previewImg" alt="Proof Image">`
+          : "";
+
+      // Build report card
+      const card = document.createElement("div");
+      card.className = "report-item";
+      card.innerHTML = `
+        <h4>${report.issueType || "Unknown Issue"}</h4>
+        <small><strong>Barangay:</strong> ${report.barangay || "N/A"}</small><br>
+        <small><strong>Location:</strong> ${report.location || "N/A"}</small><br>
+        <p><strong>Description:</strong> ${report.desc || report.description || "No description provided."}</p>
+        ${imgHTML}
+        <div>
+          <span class="status ${report.status || "Pending"}">${report.status || "Pending"}</span>
+          <select class="statusSelect" data-id="${reportId}">
+            <option value="Pending" ${report.status==="Pending"?"selected":""}>Pending</option>
+            <option value="InProgress" ${report.status==="InProgress"?"selected":""}>In Progress</option>
+            <option value="Resolved" ${report.status==="Resolved"?"selected":""}>Resolved</option>
+          </select>
+        </div>
+      `;
+
+      reportList.appendChild(card);
+    });
+
+    // Setup interactive elements
+    attachStatusListeners();
+    setupImagePreview();
+
+  } catch (error) {
+    console.error("❌ Error loading reports:", error);
+    reportList.innerHTML = "<p>Failed to load reports. Please try again later.</p>";
   }
+}
 
-  snap.forEach((docSnap) => {
-    const report = docSnap.data();
-    const reportId = docSnap.id;
-
-    // ✅ Support all image fields (Base64, legacy, storage)
-    const imgHTML = report.imageBase64
-      ? `<img src="${report.imageBase64}" class="previewImg" alt="Proof Image">`
-      : report.imageData
-      ? `<img src="${report.imageData}" class="previewImg" alt="Proof Image">`
-      : report.imageUrl
-      ? `<img src="${report.imageUrl}" class="previewImg" alt="Proof Image">`
-      : "";
-
-    const card = document.createElement("div");
-    card.classList.add("report-card");
-
-    // Generate card content with template literals (backticks)
-    card.innerHTML = `
-      <strong>${report.issueType || "Unknown Issue"}</strong> — ${report.barangay || ""}, ${report.location || ""}<br>
-      <em>${report.desc || report.description || "No description provided"}</em><br>
-      <small>Author: ${report.author || "Unknown"}</small><br>
-      <small>Status: ${report.status || "Pending"}</small><br>
-      ${imgHTML} <br>
-      <button class="status-btn ${report.status === "Resolved" ? "status-resolved" : "status-pending"}" data-id="${reportId}">
-        ${report.status === "Resolved" ? "Resolved" : "Mark as Resolved"}
-      </button>
-    `;
-    reportsContainer.appendChild(card);
-  });
-
-  // === Image Preview Modal ===
-  setupImagePreview();
-
-  // === Event: Mark as Resolved ===
-  document.querySelectorAll(".status-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-id");
+// === Status Update Handler ===
+function attachStatusListeners() {
+  document.querySelectorAll(".statusSelect").forEach((select) => {
+    select.addEventListener("change", async (e) => {
+      const id = e.target.dataset.id;
+      const newStatus = e.target.value;
       try {
-        await updateDoc(doc(db, "reports", id), { status: "Resolved" });
-        alert("✅ Report marked as resolved!");
-        loadReports();  // Reload reports after update
+        await updateDoc(doc(db, "reports", id), { status: newStatus });
+        e.target.previousElementSibling.textContent = newStatus;
+        e.target.previousElementSibling.className = `status ${newStatus}`;
       } catch (err) {
         console.error("Error updating report:", err);
         alert("❌ Failed to update report status.");
@@ -86,11 +111,44 @@ async function loadReports() {
   });
 }
 
-// === Run Load on Start ===
-document.addEventListener("DOMContentLoaded", loadReports);
+// === Image Preview Modal ===
+function setupImagePreview() {
+  const oldModal = document.getElementById("imgModal");
+  if (oldModal) oldModal.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "imgModal";
+  modal.style.cssText = `
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    justify-content: center;
+    align-items: center;
+  `;
+
+  const modalImg = document.createElement("img");
+  modalImg.style.cssText = `
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(255,255,255,0.3);
+  `;
+  modal.appendChild(modalImg);
+  document.body.appendChild(modal);
+
+  modal.addEventListener("click", () => (modal.style.display = "none"));
+
+  document.querySelectorAll(".previewImg").forEach((img) => {
+    img.addEventListener("click", () => {
+      modalImg.src = img.src;
+      modal.style.display = "flex";
+    });
+  });
+}
 
 // === Logout ===
-const logoutBtn = document.getElementById("logoutBtn");
 if (logoutBtn) {
   logoutBtn.addEventListener("click", () => {
     localStorage.removeItem("currentUser");
@@ -98,51 +156,8 @@ if (logoutBtn) {
   });
 }
 
-// ======================================================
-// 🖼️ Image Preview Modal Logic
-// ======================================================
+// === Auto Refresh (Every 60 seconds for Sync) ===
+setInterval(loadReports, 60000);
 
-function setupImagePreview() {
-  // Remove any previous modal
-  const existing = document.getElementById("imgModal");
-  if (existing) existing.remove();
-
-  // Create modal
-  const modal = document.createElement("div");
-  modal.id = "imgModal";
-  modal.style.cssText = `
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    justify-content: center;
-    align-items: center;
-  `;
-  
-  const img = document.createElement("img");
-  img.id = "modalImg";
-  img.style.cssText = `
-    max-width: 90%;
-    max-height: 90%;
-    border-radius: 10px;
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-  `;
-  modal.appendChild(img);
-
-  document.body.appendChild(modal);
-
-  // Close modal on click
-  modal.addEventListener("click", () => (modal.style.display = "none"));
-
-  // Open modal on image click
-  document.querySelectorAll(".previewImg").forEach((image) => {
-    image.addEventListener("click", () => {
-      img.src = image.src;
-      modal.style.display = "flex";  // Show modal
-    });
-  });
-}
+// === Initialize ===
+document.addEventListener("DOMContentLoaded", loadReports);
