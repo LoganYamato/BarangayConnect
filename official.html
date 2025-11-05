@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Official Dashboard | BarangayConnect</title>
-  <link rel="stylesheet" href="style.css" />
   <style>
     body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; }
     header.navbar {
@@ -24,7 +23,6 @@
     main.container {
       padding: 20px; max-width: 1000px; margin: 0 auto;
     }
-
     h2 { margin-top: 0; }
 
     /* Map viewer */
@@ -33,6 +31,7 @@
       margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
 
+    /* Report list */
     .report-item {
       background: #fff; padding: 15px; border-radius: 10px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 15px;
@@ -50,7 +49,24 @@
       font-size: 13px; color: #fff; margin-top: 4px;
     }
     .Pending { background: #f39c12; }
+    .InProgress { background: #3498db; }
     .Resolved { background: #27ae60; }
+
+    /* Announcement form */
+    .announcement-box {
+      background: #fff; padding: 15px; border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 25px;
+    }
+    .announcement-box h3 { margin-top: 0; color: #1e73be; }
+    .announcement-box input, .announcement-box textarea, .announcement-box button {
+      width: 100%; padding: 10px; margin: 6px 0;
+      border-radius: 6px; border: 1px solid #ccc; font-family: inherit;
+    }
+    .announcement-box button {
+      background: #1e73be; color: #fff; border: none; cursor: pointer;
+      transition: background 0.2s; font-weight: 600;
+    }
+    .announcement-box button:hover { background: #155b96; }
 
     footer {
       text-align: center; padding: 10px; color: #888; font-size: 14px;
@@ -63,12 +79,19 @@
     <h1>BarangayConnect</h1>
     <nav>
       <a href="official.html" class="active">Reports</a>
-      <a href="announcement.html">Announcements</a>
       <button id="logoutBtn" class="logout">Logout</button>
     </nav>
   </header>
 
   <main class="container">
+    <section class="announcement-box">
+      <h3>📰 Post an Announcement</h3>
+      <input type="text" id="annTitle" placeholder="Title" required />
+      <textarea id="annBody" placeholder="Write announcement details..." rows="3" required></textarea>
+      <button id="postAnnBtn">Post Announcement</button>
+      <p id="annStatus" style="color:green; font-size:14px;"></p>
+    </section>
+
     <h2>🗺️ Map Viewer</h2>
     <iframe id="mapViewer" 
       src="https://www.google.com/maps?q=Santa+Cruz+Makati&output=embed" 
@@ -83,9 +106,12 @@
   </footer>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, orderBy } 
-      from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { 
+      initializeApp 
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { 
+      getFirestore, collection, getDocs, query, orderBy, addDoc, updateDoc, doc 
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
@@ -105,6 +131,7 @@
     const currentUser = JSON.parse(localStorage.getItem("currentUser")) || {};
     const officialBarangay = currentUser.barangay || "Santa Cruz";
 
+    // --- Load reports ---
     async function loadReports() {
       reportList.innerHTML = "<p>Loading reports...</p>";
       const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
@@ -116,13 +143,11 @@
       }
 
       reportList.innerHTML = "";
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
+      for (const docSnap of querySnapshot.docs) {
+        const data = docSnap.data();
+        if (!data.location?.includes(officialBarangay)) continue;
 
-        // Only show reports from same barangay
-        if (!data.location?.includes(officialBarangay)) return;
-
-        const date = data.timestamp?.toDate?.().toLocaleString() || "No date";
+        const date = data.timestamp?.toDate?.().toLocaleString?.() || "No date";
         const mapQuery = encodeURIComponent(`${data.location}, ${officialBarangay}`);
 
         const reportDiv = document.createElement("div");
@@ -134,25 +159,65 @@
           <small><strong>Date:</strong> ${date}</small>
           <p><strong>Description:</strong> ${data.description || "No description provided."}</p>
           ${data.imageData ? `<img src="${data.imageData}" alt="Report Image">` : ""}
-          <span class="status ${data.status || "Pending"}">${data.status || "Pending"}</span>
+          <div>
+            <span class="status ${data.status || "Pending"}">${data.status || "Pending"}</span>
+            <select class="statusSelect">
+              <option value="Pending" ${data.status==="Pending"?"selected":""}>Pending</option>
+              <option value="InProgress" ${data.status==="InProgress"?"selected":""}>In Progress</option>
+              <option value="Resolved" ${data.status==="Resolved"?"selected":""}>Resolved</option>
+            </select>
+          </div>
         `;
 
-        // Clicking a report updates the main map viewer
+        const select = reportDiv.querySelector(".statusSelect");
+        select.addEventListener("change", async (e)=>{
+          const newStatus = e.target.value;
+          await updateDoc(doc(db, "reports", docSnap.id), { status: newStatus });
+          // silent refresh
+          loadReports();
+        });
+
         reportDiv.addEventListener("click", () => {
           mapViewer.src = `https://www.google.com/maps?q=${mapQuery}&output=embed`;
           window.scrollTo({ top: 100, behavior: "smooth" });
         });
 
         reportList.appendChild(reportDiv);
-      });
+      }
     }
 
-    // Logout button
+    // --- Post Announcement ---
+    const postBtn = document.getElementById("postAnnBtn");
+    postBtn.addEventListener("click", async ()=>{
+      const title = document.getElementById("annTitle").value.trim();
+      const body = document.getElementById("annBody").value.trim();
+      const statusMsg = document.getElementById("annStatus");
+      if (!title || !body) return alert("Please fill in both title and body.");
+
+      try {
+        await addDoc(collection(db, "announcements"), {
+          title, body,
+          timestamp: Date.now(),
+          author: currentUser?.name || "Barangay Official",
+          barangay: officialBarangay
+        });
+        statusMsg.textContent = "✅ Announcement posted!";
+        document.getElementById("annTitle").value = "";
+        document.getElementById("annBody").value = "";
+        setTimeout(()=>statusMsg.textContent="", 3000);
+      } catch (err) {
+        console.error(err);
+        statusMsg.textContent = "❌ Failed to post announcement.";
+      }
+    });
+
+    // --- Logout ---
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("currentUser");
       window.location.href = "index.html";
     });
 
+    // --- Init ---
     loadReports();
   </script>
 </body>
