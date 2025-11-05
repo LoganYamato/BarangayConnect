@@ -2,11 +2,19 @@
 // BarangayConnect | Official Dashboard Logic
 // ======================================================
 
-// Firebase Imports
+// === Firebase Imports ===
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  updateDoc,
+  doc,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// Firebase Configuration
+// === Firebase Config ===
 const firebaseConfig = {
   apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
   authDomain: "iss-bc.firebaseapp.com",
@@ -16,20 +24,19 @@ const firebaseConfig = {
   appId: "1:455122393981:web:bdf281da744767c0064a14"
 };
 
-// Initialize Firebase
+// === Initialize Firebase ===
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// DOM Elements
+// === DOM Elements ===
 const reportsContainer = document.getElementById("reportsContainer");
 
-// Load Reports Function
+// === Load Reports ===
 async function loadReports() {
   reportsContainer.innerHTML = "<p>Loading reports...</p>";
 
-  // Create query to get reports from Firestore
+  // Fix: Defining the query properly
   const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
-  
   try {
     const snap = await getDocs(q);
 
@@ -44,7 +51,7 @@ async function loadReports() {
       const report = docSnap.data();
       const reportId = docSnap.id;
 
-      // Support for different image fields (Base64, storage URL, etc.)
+      // ✅ Support all image fields (Base64, legacy, storage)
       const imgHTML =
         report.imageBase64
           ? `<img src="${report.imageBase64}" class="previewImg" alt="Proof Image">`
@@ -72,36 +79,57 @@ async function loadReports() {
       reportsContainer.appendChild(card);
     });
 
-    setupImagePreview(); // Image preview modal
-    setupStatusButtons(); // Mark as resolved functionality
+    // === Image Preview Modal ===
+    setupImagePreview();
+
+    // === Event: Mark as Resolved ===
+    document.querySelectorAll(".status-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-id");
+        try {
+          await updateDoc(doc(db, "reports", id), { status: "Resolved" });
+          alert("✅ Report marked as resolved!");
+          loadReports();
+        } catch (err) {
+          console.error("Error updating report:", err);
+          alert("❌ Failed to update report status.");
+        }
+      });
+    });
   } catch (error) {
     console.error("Error fetching reports:", error);
-    reportsContainer.innerHTML = "<p>Error loading reports.</p>";
+    reportsContainer.innerHTML = "<p>Error loading reports. Please try again later.</p>";
   }
 }
 
-// Event: Mark as Resolved
-function setupStatusButtons() {
-  document.querySelectorAll(".status-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-id");
-      try {
-        await updateDoc(doc(db, "reports", id), { status: "Resolved" });
-        alert("✅ Report marked as resolved!");
-        loadReports(); // Reload reports after updating
-      } catch (err) {
-        console.error("Error updating report:", err);
-        alert("❌ Failed to update report status.");
-      }
-    });
-  });
-}
+// === Run Load on Start ===
+document.addEventListener("DOMContentLoaded", loadReports);
 
-// Image Preview Modal Logic
+// === Logout ===
+document.addEventListener("DOMContentLoaded", () => {
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      // Clear localStorage and sessionStorage for full cleanup
+      localStorage.removeItem("currentUser");
+      sessionStorage.clear();
+
+      // Redirect to login page
+      window.location.href = "index.html";
+    });
+  }
+});
+
+// ======================================================
+// 🖼️ Image Preview Modal Logic
+// ======================================================
+
 function setupImagePreview() {
+  // Remove any previous modal
   const existing = document.getElementById("imgModal");
   if (existing) existing.remove();
 
+  // Create modal
   const modal = document.createElement("div");
   modal.id = "imgModal";
   modal.style.cssText = `
@@ -127,8 +155,10 @@ function setupImagePreview() {
   modal.appendChild(img);
   document.body.appendChild(modal);
 
+  // Close modal on click
   modal.addEventListener("click", () => (modal.style.display = "none"));
 
+  // Open modal on image click
   document.querySelectorAll(".previewImg").forEach((image) => {
     image.addEventListener("click", () => {
       img.src = image.src;
@@ -136,21 +166,3 @@ function setupImagePreview() {
     });
   });
 }
-
-// Load Reports on Page Load
-document.addEventListener("DOMContentLoaded", loadReports);
-
-// Logout Button
-document.addEventListener("DOMContentLoaded", () => {
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      // Clear localStorage and sessionStorage for full cleanup
-      localStorage.removeItem("currentUser");
-      sessionStorage.clear();
-
-      // Redirect to login page
-      window.location.href = "index.html";
-    });
-  }
-});
