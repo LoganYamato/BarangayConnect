@@ -34,4 +34,112 @@
     .small{font-size:13px;color:#516179}
     .thumb img{width:100%;height:100%;object-fit:cover;border-radius:6px}
     /* modal */
-    #imgModal{display:none;position:fixed;z-index:999
+    #imgModal{display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.8);align-items:center;justify-content:center}
+    #imgModal img{max-width:92%;max-height:92%;border-radius:8px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="logo.png" alt="Barangay Logo" class="logo" style="width:36px;height:36px;object-fit:contain">
+      <div>
+        <h1>BarangayConnect — Official Dashboard</h1>
+        <div class="small" id="subHeader">Barangay — <span id="officialBarangay">—</span></div>
+      </div>
+    </div>
+    <div>
+      <a href="resident.html"> Resident Reports</a>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <aside class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3 style="margin:0">Reports</h3>
+        <div class="small">Live / Firestore</div>
+      </div>
+      <div class="filter-row">
+        <select id="filterStatus" title="Filter by status">
+          <option value="All">All statuses</option>
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Resolved">Resolved</option>
+        </select>
+        <select id="sortReports" title="Sort">
+          <option value="latest">Latest first</option>
+          <option value="oldest">Oldest first</option>
+        </select>
+        <input id="searchInput" placeholder="Search issue / street / author" style="flex:1" />
+        <button id="refreshBtn" class="btn secondary">⟳</button>
+      </div>
+      <div id="statusIndicator" class="small" style="text-align:center;margin:6px 0;color:#16a34a">Connecting to Firestore...</div>
+      <ul id="reportList" aria-live="polite"></ul>
+    </aside>
+
+    <section class="panel">
+      <h2 id="detailTitle" style="margin:0">Select a report</h2>
+      <div class="small" id="detailSub" style="margin-bottom:8px">Click a report from the list to view details.</div>
+      <div id="detailArea">
+        <div class="small" style="margin-bottom:8px"><span class="status-pill" id="detailStatus">—</span></div>
+        <div id="detailMeta" class="small" style="margin-bottom:8px">—</div>
+        <div id="detailDesc" style="margin-bottom:12px;font-size:15px;color:#243240">—</div>
+        <div id="proofGallery" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+        <div id="statusControls" style="margin-top:14px;display:flex;gap:8px"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- image modal -->
+  <div id="imgModal"><img id="modalImg" alt="preview"></div>
+
+  <!-- main logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, query, where, orderBy, onSnapshot, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
+      authDomain: "iss-bc.firebaseapp.com",
+      projectId: "iss-bc",
+      storageBucket: "iss-bc.firebasestorage.app",
+      messagingSenderId: "455122393981",
+      appId: "1:455122393981:web:bdf281da744767c0064a14",
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    window.db = db; // handy for console debug
+
+    // UI refs
+    const reportList = document.getElementById('reportList');
+    const statusIndicator = document.getElementById('statusIndicator');
+    const filterStatus = document.getElementById('filterStatus');
+    const sortReports = document.getElementById('sortReports');
+    const searchInput = document.getElementById('searchInput');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const officialBarangay = document.getElementById('officialBarangay');
+    const detailTitle = document.getElementById('detailTitle');
+    const detailSub = document.getElementById('detailSub');
+    const detailStatus = document.getElementById('detailStatus');
+    const detailMeta = document.getElementById('detailMeta');
+    const detailDesc = document.getElementById('detailDesc');
+    const proofGallery = document.getElementById('proofGallery');
+    const statusControls = document.getElementById('statusControls');
+    const imgModal = document.getElementById('imgModal');
+    const modalImg = document.getElementById('modalImg');
+
+    // current user from localStorage (existing flow)
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    if (!currentUser || currentUser.role !== 'official') {
+      // keep safe — don't redirect in debug sessions; show indicator
+      statusIndicator.textContent = 'No official logged in (check localStorage).';
+      statusIndicator.style.color = 'orange';
+      officialBarangay.textContent = currentUser?.barangay || '—';
+    } else {
+      officialBarangay.textContent = currentUser.barangay || '—';
+      console.log('[official-debug] Logged as', currentUser.name, currentUser.email, 'barangay:', currentUser.barangay);
+    }
+
+    // helper: nicer timestamp function
+    function fmtTimestamp
