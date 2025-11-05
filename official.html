@@ -1,136 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Resident Dashboard | BarangayConnect</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Official Dashboard | BarangayConnect</title>
+  <link rel="stylesheet" href="style.css" />
   <style>
-    :root{
-      --brand:#0b55b4; --brand-ink:#fff;
-      --bg:#f7f9fc; --card:#ffffff; --ink:#0f172a; --muted:#64748b;
-      --line:#e6ebf2; --shadow:0 8px 24px rgba(2,20,48,.08);
-      --radius:14px;
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; }
+    header.navbar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #1e73be; color: #fff; padding: 10px 20px;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
-    .navbar{height:60px;background:#0b55b4;color:#fff;display:flex;align-items:center;gap:16px;padding:0 20px}
-    .navbar h1{font-size:20px;margin:0;font-weight:800}
-    .navbar nav{margin-left:auto;display:flex;gap:16px;align-items:center}
-    .navbar a{color:#fff;text-decoration:none;font-weight:700}
-    .navbar a:hover{text-decoration:underline}
-    .logout{border:0;background:transparent;color:#fff;font-weight:700;cursor:pointer}
-    .shell{max-width:1200px;margin:24px auto;padding:0 16px}
-    .page-title{margin:0 0 16px 0;font-size:28px;font-weight:800}
-    .grid{display:grid;grid-template-columns:320px minmax(0,1fr) 360px;gap:24px;align-items:start}
-    .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
-    .panel-header{background:var(--brand);color:var(--brand-ink);padding:12px 14px;font-weight:800;letter-spacing:.2px}
-    .panel-body{padding:14px}
-    .sticky{position:sticky;top:84px}
-    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
-    .card{background:#eef5ff;border-radius:var(--radius);padding:24px 16px;text-align:center;color:#0b55b4;font-weight:800;box-shadow:var(--shadow)}
-    .card small{display:block;margin-top:8px;color:#42536b;font-weight:600}
-    .chat-top{display:flex;gap:8px;align-items:center}
-    .chat-top select,.chat-input input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;outline:none;background:#fff}
-    .chat-wrap{display:flex;flex-direction:column;height:520px}
-    .chat-scroll{flex:1 1 auto;overflow:auto;padding-right:4px;display:flex;flex-direction:column;gap:10px;margin-top:10px}
-    .bubble{max-width:84%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#f3f6fb;line-height:1.3}
-    .me{align-self:flex-end;background:#eef2ff;border-color:#c7d2fe}
-    .meta{font-size:.75rem;color:var(--muted);margin-top:4px}
-    .chat-input{display:flex;gap:8px;align-items:center;margin-top:10px}
-    .btn{background:var(--brand);color:#fff;border:none;padding:10px 14px;border-radius:10px;font-weight:800;cursor:pointer}
-    .btn:disabled{opacity:.6;cursor:not-allowed}
-    .ann-list{display:flex;flex-direction:column;gap:12px}
-    .ann{border:1px solid var(--line);border-radius:12px;padding:12px;background:#f9fbff}
-    .ann h4{margin:0 0 4px 0}
-    .ann time{font-size:.8rem;color:#64748b}
-    footer{margin:28px 0;text-align:center;color:#50607a}
-    @media (max-width:1100px){
-      .grid{grid-template-columns:1fr;gap:16px}
-      .sticky{position:static;top:auto}
-      .chat-wrap{height:auto;max-height:unset}
-      .chat-scroll{min-height:220px;max-height:50vh}
-      .chat-input{position:sticky;bottom:0;background:var(--card);z-index:1}
-      .stats{grid-template-columns:1fr 1fr}
+    .navbar .logo { height: 40px; }
+    .navbar nav a, .logout {
+      color: #fff; text-decoration: none; margin: 0 10px; font-weight: 600;
     }
-    @media (max-width:600px){
-      .stats{grid-template-columns:1fr}
-      .page-title{font-size:22px}
-      .navbar{padding:0 12px}
+    .logout {
+      background: #e74c3c; border: none; padding: 6px 12px; border-radius: 4px;
+      cursor: pointer; transition: background 0.2s;
     }
-    .disabled-link {
-      opacity: 0.6;
-      pointer-events: none;
-      cursor: not-allowed;
+    .logout:hover { background: #c0392b; }
+
+    main.container {
+      padding: 20px; max-width: 900px; margin: 0 auto;
     }
+
+    .report-item, .announcement-item {
+      background: #fff; padding: 15px; border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 15px;
+    }
+    .report-item h4, .announcement-item h4 { margin: 0 0 6px; color: #1e73be; }
+    .report-item small, .announcement-item small { color: #666; display: block; margin-bottom: 6px; }
+    .report-item img {
+      max-width: 150px; border-radius: 8px; display: block;
+      margin: 6px 0; object-fit: cover;
+    }
+    iframe.map {
+      width: 100%; height: 200px; border: 0; border-radius: 8px; margin-top: 10px;
+    }
+    .status {
+      display: inline-block; padding: 4px 8px; border-radius: 6px;
+      font-size: 13px; color: #fff; margin-top: 4px;
+    }
+    .Pending { background: #f39c12; }
+    .Resolved { background: #27ae60; }
+
+    .announcement-section {
+      margin-top: 40px;
+    }
+    .announcement-section h2 {
+      margin-bottom: 15px;
+      border-bottom: 2px solid #1e73be;
+      padding-bottom: 5px;
+    }
+
+    footer { text-align: center; padding: 10px; color: #888; font-size: 14px; }
   </style>
 </head>
 <body>
   <header class="navbar">
+    <img src="logo.png" alt="Barangay Logo" class="logo">
     <h1>BarangayConnect</h1>
     <nav>
-      <a href="resident.html">Dashboard</a>
-      <a href="report.html">Report</a>
+      <a href="official.html" class="active">Dashboard</a>
       <button id="logoutBtn" class="logout">Logout</button>
     </nav>
   </header>
 
-  <main class="shell">
-    <h2 class="page-title" id="welcomeText">Welcome, Resident!</h2>
+  <main class="container">
+    <h2>📋 Resident Reports</h2>
+    <div id="reportList"></div>
 
-    <section class="grid">
-      <!-- Chat Panel -->
-      <aside class="panel sticky" aria-label="Direct Messages">
-        <div class="panel-header">Direct Messages</div>
-        <div class="panel-body">
-          <div class="chat-top">
-            <label for="peer" style="font-weight:700">Chat with</label>
-            <select id="peer" aria-label="Select a person to chat with"></select>
-          </div>
-          <div class="chat-wrap">
-            <div id="chatScroll" class="chat-scroll" aria-live="polite"></div>
-            <form id="chatForm" class="chat-input">
-              <input id="chatMsg" type="text" placeholder="Type a message…" autocomplete="off" required/>
-              <button class="btn" type="submit">Send</button>
-            </form>
-            <div class="meta">Private thread stored locally for now.</div>
-          </div>
-        </div>
-      </aside>
-
-      <!-- Stats Panel -->
-      <section>
-        <div class="panel">
-          <div class="panel-header">Community Statistics (Santa Cruz, Makati)</div>
-          <div class="panel-body">
-            <div class="stats">
-              <div class="card" id="wasteCard">Waste Reports: 0 <small id="wasteDate"></small></div>
-              <div class="card" id="roadCard">Road Issues: 0 <small id="roadDate"></small></div>
-              <div class="card" id="safetyCard">Safety Concerns: 0 <small id="safetyDate"></small></div>
-              <div class="card" id="healthCard">Health Reports: 0 <small id="healthDate"></small></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Announcements -->
-      <aside class="panel sticky" aria-label="Announcements">
-        <div class="panel-header">Announcements</div>
-        <div class="panel-body">
-          <div id="annList" class="ann-list"></div>
-          <div class="meta" style="margin-top:8px">🔄 Refresh to see the latest updates.</div>
-        </div>
-      </aside>
-    </section>
+    <div class="announcement-section">
+      <h2>📢 Barangay Announcements</h2>
+      <div id="announcementList"></div>
+    </div>
   </main>
 
   <footer>
-    <small>BarangayConnect — Resident Dashboard (Santa Cruz, Makati)</small>
+    <small>BarangayConnect — Official Dashboard</small>
   </footer>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, orderBy } 
+      from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
@@ -138,125 +92,90 @@
       projectId: "iss-bc",
       storageBucket: "iss-bc.firebasestorage.app",
       messagingSenderId: "455122393981",
-      appId: "1:455122393981:web:bdf281da744767c0064a14"
+      appId: "1:455122393981:web:bdf281da744767c0064a14",
+      measurementId: "G-6VQLV0PG81"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    if (!currentUser) { window.location.href="index.html"; }
-    else { document.getElementById("welcomeText").textContent = `Welcome, ${currentUser.name || "Resident"}!`; }
+    const reportList = document.getElementById("reportList");
+    const announcementList = document.getElementById("announcementList");
+    const currentUser = JSON.parse(localStorage.getItem("currentUser")) || {};
+    const officialBarangay = currentUser.barangay || "Santa Cruz";
 
-    document.getElementById("logoutBtn").addEventListener("click", ()=>{
-      localStorage.removeItem("currentUser"); window.location.href="index.html";
-    });
+    // Load reports
+    async function loadReports() {
+      reportList.innerHTML = "<p>Loading reports...</p>";
+      const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
+      const querySnapshot = await getDocs(q);
 
-    const AREA_KEY = "SantaCruz-Makati";
-    const ANN_KEY  = `bc_ann_${AREA_KEY}`;
-    const DM_KEY   = (me,peer)=> `bc_dm_${AREA_KEY}_${[me,peer].sort().join("__")}`;
-
-    const AnnStore = {
-      list(){
-        const val = localStorage.getItem(ANN_KEY);
-        if (val) return JSON.parse(val);
-        const seed = [
-          {id:crypto.randomUUID(), title:"Barangay Assembly", body:"General assembly on Nov 10, 4:00 PM at Covered Court.", ts:Date.now()-1000*60*60*24*2},
-          {id:crypto.randomUUID(), title:"Waste Collection", body:"Schedule change this week: Tue & Fri, 6–9 AM.", ts:Date.now()-1000*60*60*6}
-        ];
-        localStorage.setItem(ANN_KEY, JSON.stringify(seed));
-        return seed;
+      if (querySnapshot.empty) {
+        reportList.innerHTML = "<p>No reports yet.</p>";
+        return;
       }
-    };
 
-    const DMStore = {
-      list(peer){ const key = DM_KEY(currentUser.name||"Resident", peer); return JSON.parse(localStorage.getItem(key) || "[]"); },
-      add(peer, msg){ const key = DM_KEY(currentUser.name||"Resident", peer); const all = DMStore.list(peer); all.push(msg); localStorage.setItem(key, JSON.stringify(all)); }
-    };
+      reportList.innerHTML = "";
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.barangay !== officialBarangay) return;
 
-    const annList = document.getElementById("annList");
-    function renderAnnouncements(){
-      annList.innerHTML = "";
-      AnnStore.list().forEach(a=>{
-        const el = document.createElement("article");
-        el.className = "ann";
-        el.innerHTML = `<h4>${a.title}</h4><time>${new Date(a.ts).toLocaleString()}</time><p style="margin:8px 0 0">${a.body}</p>`;
-        annList.appendChild(el);
+        const date = data.timestamp?.toDate?.().toLocaleString?.() || "No date";
+        const mapQuery = encodeURIComponent(`${data.location}, ${officialBarangay}`);
+        const mapEmbed = `https://www.google.com/maps?q=${mapQuery}&output=embed`;
+
+        const reportDiv = document.createElement("div");
+        reportDiv.className = "report-item";
+        reportDiv.innerHTML = `
+          <h4>${data.issueType || "Unspecified Issue"}</h4>
+          <small><strong>Barangay:</strong> ${officialBarangay}</small>
+          <small><strong>Location:</strong> ${data.location || "N/A"}</small>
+          <small><strong>Date:</strong> ${date}</small>
+          <p><strong>Description:</strong> ${data.description || "No description provided."}</p>
+          ${data.imageData ? `<img src="${data.imageData}" alt="Report Image">` : ""}
+          <span class="status ${data.status || "Pending"}">${data.status || "Pending"}</span>
+          <iframe class="map" src="${mapEmbed}" loading="lazy"></iframe>
+        `;
+        reportList.appendChild(reportDiv);
       });
     }
 
-    const knownContacts = [
-      {id:"desk", name:"Barangay Help Desk"},
-      {id:"captain", name:"Brgy. Captain"},
-      {id:"health", name:"Health Officer"}
-    ];
+    // Load announcements
+    async function loadAnnouncements() {
+      announcementList.innerHTML = "<p>Loading announcements...</p>";
+      const q = query(collection(db, "announcements"), orderBy("timestamp", "desc"));
+      const snapshot = await getDocs(q);
 
-    const peerSel   = document.getElementById("peer");
-    const chatScroll= document.getElementById("chatScroll");
-    const chatForm  = document.getElementById("chatForm");
-    const chatMsg   = document.getElementById("chatMsg");
-
-    function fillContacts(){
-      peerSel.innerHTML="";
-      knownContacts.forEach(p=>{
-        const opt=document.createElement("option");
-        opt.value=p.name; opt.textContent=p.name;
-        peerSel.appendChild(opt);
-      });
-    }
-
-    function renderThread(){
-      chatScroll.innerHTML="";
-      const me = currentUser?.name || "Resident";
-      const peer = peerSel.value;
-      DMStore.list(peer).slice(-250).forEach(m=>{
-        const b = document.createElement("div");
-        b.className = "bubble" + (m.author===me ? " me" : "");
-        b.innerHTML = `<div>${m.text}</div><div class="meta">${m.author} • ${new Date(m.ts).toLocaleString()}</div>`;
-        chatScroll.appendChild(b);
-      });
-      chatScroll.scrollTop = chatScroll.scrollHeight;
-    }
-
-    chatForm.addEventListener("submit",(e)=>{
-      e.preventDefault();
-      const text = chatMsg.value.trim(); if(!text) return;
-      const msg = { id:crypto.randomUUID(), author: currentUser?.name || "Resident", text, ts:Date.now() };
-      DMStore.add(peerSel.value, msg);
-      chatMsg.value=""; renderThread();
-    });
-    peerSel.addEventListener("change", renderThread);
-
-    async function loadCharts(){
-      const counts = { Waste:0,Road:0,Safety:0,Health:0 };
-      try{
-        const snap = await getDocs(collection(db,"reports"));
-        snap.forEach(doc=>{
-          const r = doc.data(); if (counts[r.issueType] !== undefined) counts[r.issueType]++;
-        });
-      }catch(e){}
-      const date = new Date().toLocaleDateString();
-      document.getElementById("wasteCard").firstChild.textContent = `Waste Reports: ${counts.Waste} `;
-      document.getElementById("roadCard").firstChild.textContent  = `Road Issues: ${counts.Road} `;
-      document.getElementById("safetyCard").firstChild.textContent= `Safety Concerns: ${counts.Safety} `;
-      document.getElementById("healthCard").firstChild.textContent= `Health Reports: ${counts.Health} `;
-      document.getElementById("wasteDate").textContent  = `Updated as of ${date}`;
-      document.getElementById("roadDate").textContent   = `Updated as of ${date}`;
-      document.getElementById("safetyDate").textContent = `Updated as of ${date}`;
-      document.getElementById("healthDate").textContent = `Updated as of ${date}`;
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const reportLink = document.querySelector('a[href="report.html"]');
-      if (currentUser?.role !== "resident" && reportLink) {
-        reportLink.classList.add("disabled-link");
-        reportLink.title = "Only residents can file reports.";
+      if (snapshot.empty) {
+        announcementList.innerHTML = "<p>No announcements yet.</p>";
+        return;
       }
-      renderAnnouncements();
-      fillContacts();
-      renderThread();
-      loadCharts();
+
+      announcementList.innerHTML = "";
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const date = data.timestamp?.toDate?.().toLocaleString?.() || "No date";
+        const div = document.createElement("div");
+        div.className = "announcement-item";
+        div.innerHTML = `
+          <h4>${data.title || "Untitled Announcement"}</h4>
+          <small><strong>Date:</strong> ${date}</small>
+          <p>${data.content || "No details provided."}</p>
+          <small><em>Posted by: ${data.author || "Unknown"}</em></small>
+        `;
+        announcementList.appendChild(div);
+      });
+    }
+
+    // Logout button
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("currentUser");
+      window.location.href = "index.html";
     });
+
+    // Initial load
+    loadReports();
+    loadAnnouncements();
   </script>
 </body>
 </html>
