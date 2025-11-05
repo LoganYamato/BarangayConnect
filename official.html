@@ -6,36 +6,152 @@
   <title>Official Dashboard — BarangayConnect</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    :root{
-      --blue:#1e5bb8;
-      --green:#16a34a;
-      --muted:#f4f6fb;
-      --card:#fff;
-      --text:#0f172a;
+    :root {
+      --blue: #1e5bb8;
+      --green: #16a34a;
+      --muted: #f4f6fb;
+      --card: #fff;
+      --text: #0f172a;
     }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--muted);color:var(--text)}
-    header{background:linear-gradient(90deg,var(--blue),#174a95);color:white;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-    header .brand{display:flex;gap:12px;align-items:center}
-    header h1{font-size:18px;margin:0}
-    #logoutBtn{background:#dc3545;border:0;color:white;padding:8px 12px;border-radius:8px;cursor:pointer}
-    main{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px;max-width:1200px;margin:18px auto}
-    @media (max-width:900px){main{grid-template-columns:1fr;padding:12px}}
-    .panel{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
-    .filter-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
-    .filter-row select, .filter-row input {padding:8px;border-radius:8px;border:1px solid #e6eefc}
-    #reportList{list-style:none;margin:0;padding:0;max-height:72vh;overflow:auto}
-    #reportList li{padding:12px;border-radius:8px;margin-bottom:8px;border:1px solid #eef3ff;cursor:pointer;display:grid;grid-template-columns:1fr 120px;gap:10px}
-    #reportList li:hover{background:#f8fbff}
-    #reportList li .meta{font-size:13px;color:#516179}
-    .status-pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid #e6eefc;background:#fff}
-    .btn{background:var(--blue);color:white;border:0;padding:8px 10px;border-radius:8px;cursor:pointer}
-    .btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--blue)}
-    .small{font-size:13px;color:#516179}
-    .thumb img{width:100%;height:100%;object-fit:cover;border-radius:6px}
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, Segoe UI, Roboto, Arial;
+      background: var(--muted);
+      color: var(--text);
+    }
+    header {
+      background: linear-gradient(90deg, var(--blue), #174a95);
+      color: white;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    header .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    header h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+    #logoutBtn {
+      background: #dc3545;
+      border: 0;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 18px;
+      padding: 18px;
+      max-width: 1200px;
+      margin: 18px auto;
+    }
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+        padding: 12px;
+      }
+    }
+    .panel {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    }
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .filter-row select, .filter-row input {
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #e6eefc;
+    }
+    #reportList {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 72vh;
+      overflow: auto;
+    }
+    #reportList li {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border: 1px solid #eef3ff;
+      cursor: pointer;
+      display: grid;
+      grid-template-columns: 1fr 120px;
+      gap: 10px;
+    }
+    #reportList li:hover {
+      background: #f8fbff;
+    }
+    #reportList li .meta {
+      font-size: 13px;
+      color: #516179;
+    }
+    .status-pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #e6eefc;
+      background: #fff;
+    }
+    .btn {
+      background: var(--blue);
+      color: white;
+      border: 0;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .btn.secondary {
+      background: #fff;
+      color: var(--blue);
+      border: 1px solid var(--blue);
+    }
+    .small {
+      font-size: 13px;
+      color: #516179;
+    }
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 6px;
+    }
     /* modal */
-    #imgModal{display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.8);align-items:center;justify-content:center}
-    #imgModal img{max-width:92%;max-height:92%;border-radius:8px}
+    #imgModal {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      align-items: center;
+      justify-content: center;
+    }
+    #imgModal img {
+      max-width: 92%;
+      max-height: 92%;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
@@ -52,7 +168,6 @@
       <button id="logoutBtn">Logout</button>
     </div>
   </header>
-
   <main>
     <aside class="panel">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -76,7 +191,6 @@
       <div id="statusIndicator" class="small" style="text-align:center;margin:6px 0;color:#16a34a">Connecting to Firestore...</div>
       <ul id="reportList" aria-live="polite"></ul>
     </aside>
-
     <section class="panel">
       <h2 id="detailTitle" style="margin:0">Select a report</h2>
       <div class="small" id="detailSub" style="margin-bottom:8px">Click a report from the list to view details.</div>
@@ -89,10 +203,8 @@
       </div>
     </section>
   </main>
-
   <!-- image modal -->
   <div id="imgModal"><img id="modalImg" alt="preview"></div>
-
   <!-- main logic -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -107,6 +219,7 @@
       messagingSenderId: "455122393981",
       appId: "1:455122393981:web:bdf281da744767c0064a14",
     };
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     window.db = db; // handy for console debug
@@ -142,4 +255,194 @@
     }
 
     // helper: nicer timestamp function
-    function fmtTimestamp
+    function fmtTimestamp(ts) {
+      if (!ts) return '';
+      // support Firestore Timestamp objects or ISO strings
+      if (ts.toDate) return ts.toDate().toLocaleString();
+      try {
+        const d = new Date(ts);
+        if (!isNaN(d)) return d.toLocaleString();
+      } catch {}
+      return String(ts);
+    }
+
+    // query builder (adds status where if selected)
+    function buildQuery() {
+      const barangay = currentUser?.barangay || 'Santa Cruz';
+      const statusVal = filterStatus.value;
+      const order = sortReports.value === 'latest' ? 'desc' : 'asc';
+      const coll = collection(db, 'reports');
+      if (statusVal && statusVal !== 'All') {
+        return query(coll, where('barangay', '==', barangay), where('status', '==', statusVal), orderBy('timestamp', order));
+      }
+      return query(coll, where('barangay', '==', barangay), orderBy('timestamp', order));
+    }
+
+    // keep local cache for searching client-side
+    let cached = [];
+    let unsubscribe = null;
+
+    function renderList(list) {
+      reportList.innerHTML = '';
+      if (!list.length) {
+        reportList.innerHTML = '<li style="text-align:center;color:#666">No reports found.</li>';
+        clearDetail();
+        return;
+      }
+      list.forEach(r => {
+        const li = document.createElement('li');
+        li.dataset.id = r.id;
+        const thumbHtml = (r.imageData || r.imageBase64 || r.imageUrl) ? 
+          `<div class="thumb" style="width:120px;height:80px;overflow:hidden"><img src="${r.imageData||r.imageBase64||r.imageUrl}" alt="thumb"></div>` :
+          `<div style="width:120px;height:80px;display:grid;place-items:center;color:#9aa8c7">No image</div>`;
+        li.innerHTML = `<div>
+          <strong>${r.issueType || 'Unknown'}</strong>
+          <div class="meta">${r.location || ''} • ${r.author || 'Unknown'}</div>
+          <div class="meta">Status: <span class="status-pill">${r.status || 'Pending'}</span></div>
+          <div class="meta" style="margin-top:6px;color:#334155">${(r.desc || r.description || '').slice(0, 140)}${(r.desc||r.description||'').length > 140 ? '…' : ''}</div>
+          <div class="meta" style="margin-top:6px">${fmtTimestamp(r.timestamp)}</div>
+        </div>
+        ${thumbHtml}`;
+        li.addEventListener('click', () => showDetail(r.id));
+        reportList.appendChild(li);
+      });
+    }
+
+    function clearDetail() {
+      detailTitle.textContent = 'Select a report';
+      detailSub.textContent = 'Click a report from the list to view details.';
+      detailStatus.textContent = '—';
+      detailMeta.textContent = '';
+      detailDesc.textContent = '—';
+      proofGallery.innerHTML = '';
+      statusControls.innerHTML = '';
+    }
+
+    function showDetail(id) {
+      const r = cached.find(x => x.id === id);
+      if (!r) return;
+      detailTitle.textContent = `${r.issueType || 'Report'} — ${r.location || ''}`;
+      detailStatus.textContent = r.status || 'Pending';
+      detailMeta.textContent = `${r.author || 'Unknown'} • ${fmtTimestamp(r.timestamp)}`;
+      detailDesc.textContent = r.desc || r.description || 'No description provided.';
+      proofGallery.innerHTML = '';
+      const images = [];
+      if (r.imageData) images.push(r.imageData);
+      if (r.imageBase64) images.push(r.imageBase64);
+      if (r.imageUrl) images.push(r.imageUrl);
+      images.forEach(src => {
+        const b = document.createElement('div');
+        b.style.width = '120px';
+        b.style.height = '90px';
+        b.style.overflow = 'hidden';
+        b.style.borderRadius = '8px';
+        b.style.cursor = 'pointer';
+        b.innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:cover">`;
+        b.addEventListener('click', () => { modalImg.src = src; imgModal.style.display = 'flex'; });
+        proofGallery.appendChild(b);
+      });
+      // status buttons
+      statusControls.innerHTML = '';
+      const make = (txt, color, newStatus) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.textContent = txt;
+        btn.style.background = color;
+        btn.addEventListener('click', async () => {
+          try {
+            await updateDoc(doc(db, 'reports', id), { status: newStatus });
+            statusIndicator.textContent = `Updated to "${newStatus}"`;
+            // update cache immediately
+            const idx = cached.findIndex(x => x.id === id);
+            if (idx !== -1) { cached[idx].status = newStatus; }
+            renderList(cached);
+            showDetail(id); // refresh detail
+          } catch (err) {
+            console.error('Update failed', err);
+            statusIndicator.textContent = 'Update failed — check console';
+          }
+        });
+        return btn;
+      };
+      statusControls.appendChild(make('Mark Pending', '#6b7280', 'Pending'));
+      statusControls.appendChild(make('Mark In Progress', '#1e5bb8', 'In Progress'));
+      statusControls.appendChild(make('Mark Resolved', '#16a34a', 'Resolved'));
+    }
+
+    // attach listener to Firestore query
+    function attachListener() {
+      if (unsubscribe) try { unsubscribe(); } catch(e) {}
+      let qRef;
+      try {
+        qRef = buildQuery();
+      } catch (err) {
+        console.error('Query build failed', err);
+        statusIndicator.textContent = 'Query error — check console';
+        return;
+      }
+      statusIndicator.textContent = 'Listening (Firestore)...';
+      unsubscribe = onSnapshot(qRef, snap => {
+        cached = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderList(cached);
+        statusIndicator.textContent = '✅ Firestore Live Connected';
+      }, err => {
+        console.error('onSnapshot error', err);
+        statusIndicator.textContent = '❌ Firestore error — using local fallback';
+        // local fallback (if present)
+        cached = JSON.parse(localStorage.getItem('reports') || '[]').map((r, i) => ({ id: r.id || 'local-' + i, ...r }));
+        renderList(cached);
+      });
+    }
+
+    // initial load (getDocs + attach listener)
+    async function initialLoad() {
+      try {
+        const qRef = buildQuery();
+        statusIndicator.textContent = 'Fetching initial snapshot...';
+        const snap = await getDocs(qRef);
+        cached = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderList(cached);
+        statusIndicator.textContent = '✅ Firestore initial load OK';
+      } catch (err) {
+        console.error('Initial getDocs failed', err);
+        statusIndicator.textContent = 'Initial Firestore load failed; using local data';
+        cached = JSON.parse(localStorage.getItem('reports') || '[]').map((r, i) => ({ id: r.id || 'local-' + i, ...r }));
+        renderList(cached);
+      }
+      attachListener();
+    }
+
+    // search input (client-side)
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.trim().toLowerCase();
+      if (!q) {
+        renderList(cached);
+        return;
+      }
+      const filtered = cached.filter(r => {
+        return (r.issueType || '').toLowerCase().includes(q) || 
+               (r.location || '').toLowerCase().includes(q) || 
+               (r.author || '').toLowerCase().includes(q) || 
+               (r.desc || r.description || '').toLowerCase().includes(q);
+      });
+      renderList(filtered);
+    });
+
+    // reattach on filter/sort changes
+    filterStatus.addEventListener('change', initialLoad);
+    sortReports.addEventListener('change', initialLoad);
+    refreshBtn.addEventListener('click', initialLoad);
+
+    // image modal close
+    imgModal.addEventListener('click', () => imgModal.style.display = 'none');
+
+    // logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('currentUser');
+      window.location.href = 'index.html';
+    });
+
+    // kickoff initialLoad();
+  </script>
+</body>
+</html>
