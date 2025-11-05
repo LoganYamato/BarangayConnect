@@ -3,204 +3,81 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Barangay Officials Dashboard | BarangayConnect</title>
+  <title>Official Dashboard | BarangayConnect</title>
+  <link rel="stylesheet" href="style.css" />
   <style>
-    :root {
-      --brand: #0b55b4;
-      --bg: #f7f9fc;
-      --card: #ffffff;
-      --ink: #0f172a;
-      --muted: #64748b;
-      --line: #e6ebf2;
-      --radius: 14px;
-      --shadow: 0 8px 24px rgba(2, 20, 48, 0.08);
-    }
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--ink);
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
-    }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; }
     header.navbar {
-      height: 60px;
-      background: var(--brand);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 0 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: #1e73be; color: #fff; padding: 10px 20px;
     }
-    header.navbar h1 {
-      font-size: 20px;
-      margin: 0;
-      font-weight: 800;
-    }
-    header.navbar nav {
-      margin-left: auto;
-      display: flex;
-      gap: 16px;
-      align-items: center;
-    }
-    .navbar a, .logout {
-      color: #fff;
-      text-decoration: none;
-      font-weight: 700;
+    .navbar .logo { height: 40px; }
+    .navbar nav a, .logout {
+      color: #fff; text-decoration: none; margin: 0 10px; font-weight: 600;
     }
     .logout {
-      border: none;
-      background: transparent;
-      cursor: pointer;
+      background: #e74c3c; border: none; padding: 6px 12px; border-radius: 4px;
+      cursor: pointer; transition: background 0.2s;
     }
-    .shell {
-      max-width: 1200px;
-      margin: 24px auto;
-      padding: 0 16px;
+    .logout:hover { background: #c0392b; }
+
+    main.container {
+      padding: 20px; max-width: 900px; margin: 0 auto;
     }
-    .page-title {
-      font-size: 26px;
-      font-weight: 800;
-      margin-bottom: 16px;
+
+    .report-item {
+      background: #fff; padding: 15px; border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 15px;
     }
-    .grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 24px;
+    .report-item h4 { margin: 0 0 6px; color: #1e73be; }
+    .report-item small { color: #666; display: block; margin-bottom: 6px; }
+    .report-item img {
+      max-width: 150px; border-radius: 8px; display: block;
+      margin: 6px 0; object-fit: cover;
     }
-    .panel {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
+    .map {
+      width: 100%; height: 200px; border: 0; border-radius: 8px;
+      margin-top: 10px; display: none;
     }
-    .panel-header {
-      background: var(--brand);
-      color: #fff;
-      padding: 12px 14px;
-      font-weight: 800;
+    .toggle-map {
+      background: #3498db; color: #fff; border: none;
+      padding: 6px 10px; border-radius: 6px; cursor: pointer;
+      font-size: 13px; margin-top: 6px;
     }
-    .panel-body {
-      padding: 14px;
+    .toggle-map:hover { background: #2980b9; }
+    .status {
+      display: inline-block; padding: 4px 8px; border-radius: 6px;
+      font-size: 13px; color: #fff; margin-top: 4px;
     }
-    .report {
-      border-bottom: 1px solid var(--line);
-      padding: 10px 0;
-    }
-    .report:last-child {
-      border-bottom: none;
-    }
-    .report img {
-      max-width: 100%;
-      border-radius: 10px;
-      margin-top: 8px;
-    }
-    .report small {
-      display: block;
-      color: var(--muted);
-      margin-top: 4px;
-    }
-    .ann-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .ann {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px;
-      background: #f9fbff;
-    }
-    .ann h4 {
-      margin: 0 0 4px 0;
-    }
-    .ann time {
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
-    .ann-form {
-      display: grid;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    .ann-form input,
-    .ann-form textarea {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: #fff;
-      font-family: inherit;
-    }
-    .btn {
-      background: var(--brand);
-      color: #fff;
-      border: none;
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-weight: 800;
-      cursor: pointer;
-    }
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    footer {
-      text-align: center;
-      margin: 30px 0;
-      color: #50607a;
-    }
+    .Pending { background: #f39c12; }
+    .Resolved { background: #27ae60; }
+    footer { text-align: center; padding: 10px; color: #888; font-size: 14px; }
   </style>
 </head>
 <body>
   <header class="navbar">
+    <img src="logo.png" alt="Barangay Logo" class="logo">
     <h1>BarangayConnect</h1>
     <nav>
-      <a href="official.html">Dashboard</a>
-      <a href="resident.html">Residents</a>
+      <a href="official.html" class="active">Reports</a>
+      <a href="announcement.html">Announcements</a>
       <button id="logoutBtn" class="logout">Logout</button>
     </nav>
   </header>
 
-  <main class="shell">
-    <h2 class="page-title" id="welcomeText">Welcome, Official!</h2>
-
-    <section class="grid">
-      <!-- Reports Panel -->
-      <div class="panel">
-        <div class="panel-header">Resident Reports</div>
-        <div class="panel-body" id="reportList">Loading reports...</div>
-      </div>
-
-      <!-- Announcements Panel -->
-      <aside class="panel">
-        <div class="panel-header">Post Announcements</div>
-        <div class="panel-body">
-          <div id="annList" class="ann-list"></div>
-          <div class="ann-form">
-            <input id="annTitle" placeholder="Title" />
-            <textarea id="annBody" rows="3" placeholder="Write announcement..."></textarea>
-            <button id="annPost" class="btn">Post</button>
-          </div>
-        </div>
-      </aside>
-    </section>
+  <main class="container">
+    <h2>📋 Resident Reports</h2>
+    <div id="reportList"></div>
   </main>
 
   <footer>
-    <small>BarangayConnect — Official Dashboard (Santa Cruz, Makati)</small>
+    <small>BarangayConnect — Official Dashboard</small>
   </footer>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      getDocs,
-      addDoc,
-      orderBy,
-      query,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, query, orderBy } 
+      from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
@@ -208,111 +85,70 @@
       projectId: "iss-bc",
       storageBucket: "iss-bc.firebasestorage.app",
       messagingSenderId: "455122393981",
-      appId: "1:455122393981:web:bdf281da744767c0064a14"
+      appId: "1:455122393981:web:bdf281da744767c0064a14",
+      measurementId: "G-6VQLV0PG81"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-    if (!currentUser) window.location.href = "index.html";
-    else document.getElementById("welcomeText").textContent = `Welcome, ${currentUser.name || "Official"}!`;
+    const reportList = document.getElementById("reportList");
+    const currentUser = JSON.parse(localStorage.getItem("currentUser")) || {};
+    const officialBarangay = currentUser.barangay || "Santa Cruz";
+
+    async function loadReports() {
+      reportList.innerHTML = "<p>Loading reports...</p>";
+      const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        reportList.innerHTML = "<p>No reports yet.</p>";
+        return;
+      }
+
+      reportList.innerHTML = "";
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+
+        if (!data.location?.includes(officialBarangay)) return;
+
+        const date = data.timestamp?.toDate?.().toLocaleString() || "No date";
+        const mapQuery = encodeURIComponent(`${data.location}, ${officialBarangay}`);
+        const mapEmbed = `https://www.google.com/maps?q=${mapQuery}&output=embed`;
+
+        const reportDiv = document.createElement("div");
+        reportDiv.className = "report-item";
+        reportDiv.innerHTML = `
+          <h4>${data.issueType || "Unspecified Issue"}</h4>
+          <small><strong>Barangay:</strong> ${officialBarangay}</small>
+          <small><strong>Location:</strong> ${data.location || "N/A"}</small>
+          <small><strong>Date:</strong> ${date}</small>
+          <p><strong>Description:</strong> ${data.description || "No description provided."}</p>
+          ${data.imageData ? `<img src="${data.imageData}" alt="Report Image">` : ""}
+          <span class="status ${data.status || "Pending"}">${data.status || "Pending"}</span>
+          <button class="toggle-map">🗺️ View Location on Map</button>
+          <iframe class="map" src="${mapEmbed}" loading="lazy"></iframe>
+        `;
+
+        // map toggle logic
+        const mapFrame = reportDiv.querySelector(".map");
+        const toggleBtn = reportDiv.querySelector(".toggle-map");
+        toggleBtn.addEventListener("click", () => {
+          const isVisible = mapFrame.style.display === "block";
+          mapFrame.style.display = isVisible ? "none" : "block";
+          toggleBtn.textContent = isVisible ? "🗺️ View Location on Map" : "📍 Hide Map";
+        });
+
+        reportList.appendChild(reportDiv);
+      });
+    }
 
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("currentUser");
       window.location.href = "index.html";
     });
 
-    // ============= Reports =============
-    async function loadReports() {
-      const list = document.getElementById("reportList");
-      list.innerHTML = "<p>Loading reports...</p>";
-      try {
-        const snap = await getDocs(collection(db, "reports"));
-        if (snap.empty) {
-          list.innerHTML = "<p>No reports yet.</p>";
-          return;
-        }
-        list.innerHTML = "";
-        snap.forEach((doc) => {
-          const r = doc.data();
-          const el = document.createElement("div");
-          el.className = "report";
-          el.innerHTML = `
-            <strong>${r.issueType || "Unknown Issue"}</strong> — <em>${r.status || "Pending"}</em>
-            <small>${r.location || "No location"}</small>
-            <p>${r.desc || r.description || "No description provided"}</p>
-            ${r.imageUrl ? `<img src="${r.imageUrl}" alt="Report Image"/>` : ""}
-            <small>By ${r.author || "Anonymous"} • ${new Date(r.timestamp?.toDate ? r.timestamp.toDate() : Date.now()).toLocaleString()}</small>
-          `;
-          list.appendChild(el);
-        });
-      } catch (err) {
-        console.error("Error loading reports:", err);
-        list.innerHTML = "<p>Failed to load reports.</p>";
-      }
-    }
-
-    // ============= Announcements =============
-    const annList = document.getElementById("annList");
-    const annTitle = document.getElementById("annTitle");
-    const annBody = document.getElementById("annBody");
-    const annPost = document.getElementById("annPost");
-
-    async function renderAnnouncements() {
-      annList.innerHTML = "<p>Loading announcements...</p>";
-      try {
-        const q = query(collection(db, "announcements"), orderBy("timestamp", "desc"));
-        const snap = await getDocs(q);
-        annList.innerHTML = "";
-        if (snap.empty) {
-          annList.innerHTML = "<p>No announcements yet.</p>";
-          return;
-        }
-        snap.forEach((doc) => {
-          const a = doc.data();
-          const el = document.createElement("article");
-          el.className = "ann";
-          el.innerHTML = `
-            <h4>${a.title}</h4>
-            <time>${a.timestamp?.toDate ? a.timestamp.toDate().toLocaleString() : "—"}</time>
-            <p>${a.body}</p>
-          `;
-          annList.appendChild(el);
-        });
-      } catch (e) {
-        console.error("Error loading announcements:", e);
-        annList.innerHTML = "<p>Failed to load announcements.</p>";
-      }
-    }
-
-    annPost.addEventListener("click", async () => {
-      const title = annTitle.value.trim();
-      const body = annBody.value.trim();
-      if (!title || !body) return;
-      annPost.disabled = true;
-      annPost.textContent = "Posting...";
-      try {
-        await addDoc(collection(db, "announcements"), {
-          title,
-          body,
-          author: currentUser?.name || "Official",
-          timestamp: serverTimestamp()
-        });
-        annTitle.value = "";
-        annBody.value = "";
-        await renderAnnouncements();
-      } catch (err) {
-        console.error("Error posting announcement:", err);
-      } finally {
-        annPost.disabled = false;
-        annPost.textContent = "Post";
-      }
-    });
-
-    // ============= Initialize =============
     loadReports();
-    renderAnnouncements();
   </script>
 </body>
 </html>
