@@ -35,22 +35,16 @@
       max-width: 150px; border-radius: 8px; display: block;
       margin: 6px 0; object-fit: cover;
     }
-    .map {
-      width: 100%; height: 200px; border: 0; border-radius: 8px;
-      margin-top: 10px; display: none;
+    iframe.map {
+      width: 100%; height: 200px; border: 0; border-radius: 8px; margin-top: 10px;
     }
-    .toggle-map {
-      background: #3498db; color: #fff; border: none;
-      padding: 6px 10px; border-radius: 6px; cursor: pointer;
-      font-size: 13px; margin-top: 6px;
-    }
-    .toggle-map:hover { background: #2980b9; }
     .status {
       display: inline-block; padding: 4px 8px; border-radius: 6px;
       font-size: 13px; color: #fff; margin-top: 4px;
     }
     .Pending { background: #f39c12; }
     .Resolved { background: #27ae60; }
+    .container h2 { margin-top: 0; }
     footer { text-align: center; padding: 10px; color: #888; font-size: 14px; }
   </style>
 </head>
@@ -110,6 +104,7 @@
       querySnapshot.forEach((doc) => {
         const data = doc.data();
 
+        // only show reports in same barangay
         if (!data.location?.includes(officialBarangay)) return;
 
         const date = data.timestamp?.toDate?.().toLocaleString() || "No date";
@@ -126,23 +121,13 @@
           <p><strong>Description:</strong> ${data.description || "No description provided."}</p>
           ${data.imageData ? `<img src="${data.imageData}" alt="Report Image">` : ""}
           <span class="status ${data.status || "Pending"}">${data.status || "Pending"}</span>
-          <button class="toggle-map">🗺️ View Location on Map</button>
           <iframe class="map" src="${mapEmbed}" loading="lazy"></iframe>
         `;
-
-        // map toggle logic
-        const mapFrame = reportDiv.querySelector(".map");
-        const toggleBtn = reportDiv.querySelector(".toggle-map");
-        toggleBtn.addEventListener("click", () => {
-          const isVisible = mapFrame.style.display === "block";
-          mapFrame.style.display = isVisible ? "none" : "block";
-          toggleBtn.textContent = isVisible ? "🗺️ View Location on Map" : "📍 Hide Map";
-        });
-
         reportList.appendChild(reportDiv);
       });
     }
 
+    // Logout button
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("currentUser");
       window.location.href = "index.html";
