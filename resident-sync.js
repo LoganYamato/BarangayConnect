@@ -1,68 +1,86 @@
-// ======================================================
-// BarangayConnect | Resident Report Submission Sync
-// ======================================================
-
+// official.js — Updated for Firestore announcement sync
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } 
-  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import {
+  getFirestore, collection, addDoc, serverTimestamp,
+  getDocs, orderBy, query, onSnapshot
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// ======================================================
-// Firebase Config (corrected)
-// ======================================================
 const firebaseConfig = {
   apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
   authDomain: "iss-bc.firebaseapp.com",
   projectId: "iss-bc",
   storageBucket: "iss-bc.firebasestorage.app",
   messagingSenderId: "455122393981",
-  appId: "1:455122393981:web:bdf281da744767c0064a14",
-  measurementId: "G-6VQLV0PG81"
+  appId: "1:455122393981:web:bdf281da744767c0064a14"
 };
 
-// ======================================================
-// Initialize Firebase + Firestore
-// ======================================================
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ======================================================
-// DOM Elements
-// ======================================================
-const reportForm = document.getElementById("reportForm");
-const issueTypeInput = document.getElementById("issueType");
-const locationInput = document.getElementById("location");
-const descriptionInput = document.getElementById("description");
-const submitMsg = document.getElementById("submitMessage");
+// Retrieve current logged official
+const currentOfficial = JSON.parse(localStorage.getItem("currentOfficial"));
+if (!currentOfficial) {
+  window.location.href = "index.html";
+}
 
-// ======================================================
-// Handle Submit to Firestore
-// ======================================================
-if (reportForm) {
-  reportForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
+document.getElementById("welcomeText").textContent = `Welcome, ${currentOfficial.name || "Official"}!`;
 
-    const currentUser = JSON.parse(localStorage.getItem("currentUser")) || {};
-    const author = currentUser.name || "Anonymous Resident";
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  localStorage.removeItem("currentOfficial");
+  window.location.href = "index.html";
+});
 
-    const report = {
-      issueType: issueTypeInput.value.trim(),
-      location: locationInput.value.trim(),
-      description: descriptionInput.value.trim(),
-      author,
-      status: "Pending",
-      timestamp: serverTimestamp()
-    };
 
-    try {
-      await addDoc(collection(db, "reports"), report);
-      submitMsg.textContent = "✅ Report submitted successfully!";
-      submitMsg.style.color = "green";
-      reportForm.reset();
+// -----------------------------
+// ANNOUNCEMENTS MANAGEMENT
+// -----------------------------
+const annForm = document.getElementById("annForm");
+const annTitle = document.getElementById("annTitle");
+const annBody = document.getElementById("annBody");
+const annList = document.getElementById("annList");
 
-    } catch (err) {
-      console.error("Error adding report:", err);
-      submitMsg.textContent = "❌ Failed to submit report. Try again.";
-      submitMsg.style.color = "red";
-    }
+async function loadAnnouncements() {
+  const q = query(collection(db, "announcements"), orderBy("timestamp", "desc"));
+  onSnapshot(q, (snapshot) => {
+    annList.innerHTML = "";
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const el = document.createElement("article");
+      el.className = "ann";
+      el.innerHTML = `
+        <h4>${data.title}</h4>
+        <time>${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString() : ""}</time>
+        <p>${data.body}</p>
+        <div class="meta">Posted by ${data.author || "Barangay Official"}</div>
+      `;
+      annList.appendChild(el);
+    });
   });
 }
+
+// Post new announcement
+annForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const title = annTitle.value.trim();
+  const body = annBody.value.trim();
+  if (!title || !body) return;
+
+  try {
+    await addDoc(collection(db, "announcements"), {
+      title,
+      body,
+      author: currentOfficial.name || "Barangay Official",
+      barangay: currentOfficial.barangay || "Santa Cruz, Makati",
+      timestamp: serverTimestamp(),
+    });
+
+    annForm.reset();
+    alert("✅ Announcement posted successfully!");
+  } catch (err) {
+    console.error("Error posting announcement:", err);
+    alert("⚠️ Failed to post announcement. Please try again.");
+  }
+});
+
+// Initialize
+document.addEventListener("DOMContentLoaded", loadAnnouncements);
