@@ -22,21 +22,28 @@
     .logout:hover { background: #c0392b; }
 
     main.container {
-      padding: 20px; max-width: 900px; margin: 0 auto;
+      padding: 20px; max-width: 1000px; margin: 0 auto;
     }
 
-    .report-item, .announcement-item {
+    h2 { margin-top: 0; }
+
+    /* Map viewer */
+    #mapViewer {
+      width: 100%; height: 300px; border: 0; border-radius: 10px;
+      margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .report-item {
       background: #fff; padding: 15px; border-radius: 10px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 15px;
+      transition: background 0.2s;
     }
-    .report-item h4, .announcement-item h4 { margin: 0 0 6px; color: #1e73be; }
-    .report-item small, .announcement-item small { color: #666; display: block; margin-bottom: 6px; }
+    .report-item:hover { background: #f0f7ff; }
+    .report-item h4 { margin: 0 0 6px; color: #1e73be; }
+    .report-item small { color: #666; display: block; margin-bottom: 4px; }
     .report-item img {
       max-width: 150px; border-radius: 8px; display: block;
       margin: 6px 0; object-fit: cover;
-    }
-    iframe.map {
-      width: 100%; height: 200px; border: 0; border-radius: 8px; margin-top: 10px;
     }
     .status {
       display: inline-block; padding: 4px 8px; border-radius: 6px;
@@ -45,16 +52,9 @@
     .Pending { background: #f39c12; }
     .Resolved { background: #27ae60; }
 
-    .announcement-section {
-      margin-top: 40px;
+    footer {
+      text-align: center; padding: 10px; color: #888; font-size: 14px;
     }
-    .announcement-section h2 {
-      margin-bottom: 15px;
-      border-bottom: 2px solid #1e73be;
-      padding-bottom: 5px;
-    }
-
-    footer { text-align: center; padding: 10px; color: #888; font-size: 14px; }
   </style>
 </head>
 <body>
@@ -62,19 +62,20 @@
     <img src="logo.png" alt="Barangay Logo" class="logo">
     <h1>BarangayConnect</h1>
     <nav>
-      <a href="official.html" class="active">Dashboard</a>
+      <a href="official.html" class="active">Reports</a>
+      <a href="announcement.html">Announcements</a>
       <button id="logoutBtn" class="logout">Logout</button>
     </nav>
   </header>
 
   <main class="container">
+    <h2>🗺️ Map Viewer</h2>
+    <iframe id="mapViewer" 
+      src="https://www.google.com/maps?q=Santa+Cruz+Makati&output=embed" 
+      loading="lazy"></iframe>
+
     <h2>📋 Resident Reports</h2>
     <div id="reportList"></div>
-
-    <div class="announcement-section">
-      <h2>📢 Barangay Announcements</h2>
-      <div id="announcementList"></div>
-    </div>
   </main>
 
   <footer>
@@ -100,11 +101,10 @@
     const db = getFirestore(app);
 
     const reportList = document.getElementById("reportList");
-    const announcementList = document.getElementById("announcementList");
+    const mapViewer = document.getElementById("mapViewer");
     const currentUser = JSON.parse(localStorage.getItem("currentUser")) || {};
     const officialBarangay = currentUser.barangay || "Santa Cruz";
 
-    // Load reports
     async function loadReports() {
       reportList.innerHTML = "<p>Loading reports...</p>";
       const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
@@ -118,11 +118,12 @@
       reportList.innerHTML = "";
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        if (data.barangay !== officialBarangay) return;
 
-        const date = data.timestamp?.toDate?.().toLocaleString?.() || "No date";
+        // Only show reports from same barangay
+        if (!data.location?.includes(officialBarangay)) return;
+
+        const date = data.timestamp?.toDate?.().toLocaleString() || "No date";
         const mapQuery = encodeURIComponent(`${data.location}, ${officialBarangay}`);
-        const mapEmbed = `https://www.google.com/maps?q=${mapQuery}&output=embed`;
 
         const reportDiv = document.createElement("div");
         reportDiv.className = "report-item";
@@ -134,36 +135,15 @@
           <p><strong>Description:</strong> ${data.description || "No description provided."}</p>
           ${data.imageData ? `<img src="${data.imageData}" alt="Report Image">` : ""}
           <span class="status ${data.status || "Pending"}">${data.status || "Pending"}</span>
-          <iframe class="map" src="${mapEmbed}" loading="lazy"></iframe>
         `;
+
+        // Clicking a report updates the main map viewer
+        reportDiv.addEventListener("click", () => {
+          mapViewer.src = `https://www.google.com/maps?q=${mapQuery}&output=embed`;
+          window.scrollTo({ top: 100, behavior: "smooth" });
+        });
+
         reportList.appendChild(reportDiv);
-      });
-    }
-
-    // Load announcements
-    async function loadAnnouncements() {
-      announcementList.innerHTML = "<p>Loading announcements...</p>";
-      const q = query(collection(db, "announcements"), orderBy("timestamp", "desc"));
-      const snapshot = await getDocs(q);
-
-      if (snapshot.empty) {
-        announcementList.innerHTML = "<p>No announcements yet.</p>";
-        return;
-      }
-
-      announcementList.innerHTML = "";
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const date = data.timestamp?.toDate?.().toLocaleString?.() || "No date";
-        const div = document.createElement("div");
-        div.className = "announcement-item";
-        div.innerHTML = `
-          <h4>${data.title || "Untitled Announcement"}</h4>
-          <small><strong>Date:</strong> ${date}</small>
-          <p>${data.content || "No details provided."}</p>
-          <small><em>Posted by: ${data.author || "Unknown"}</em></small>
-        `;
-        announcementList.appendChild(div);
       });
     }
 
@@ -173,9 +153,7 @@
       window.location.href = "index.html";
     });
 
-    // Initial load
     loadReports();
-    loadAnnouncements();
   </script>
 </body>
 </html>
