@@ -84,6 +84,7 @@
   </header>
 
   <main class="container">
+    <!-- 📰 Announcement Form -->
     <section class="announcement-box">
       <h3>📰 Post an Announcement</h3>
       <input type="text" id="annTitle" placeholder="Title" required />
@@ -92,11 +93,13 @@
       <p id="annStatus" style="color:green; font-size:14px;"></p>
     </section>
 
+    <!-- 🗺️ Map Viewer -->
     <h2>🗺️ Map Viewer</h2>
     <iframe id="mapViewer" 
       src="https://www.google.com/maps?q=Santa+Cruz+Makati&output=embed" 
       loading="lazy"></iframe>
 
+    <!-- 📋 Resident Reports -->
     <h2>📋 Resident Reports</h2>
     <div id="reportList"></div>
   </main>
@@ -105,13 +108,13 @@
     <small>BarangayConnect — Official Dashboard</small>
   </footer>
 
+  <!-- ✅ Modular JS for Official Dashboard -->
+  <script type="module" src="official.js"></script>
+
+  <!-- ✅ Inline Announcement + Map Logic -->
   <script type="module">
-    import { 
-      initializeApp 
-    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { 
-      getFirestore, collection, getDocs, query, orderBy, addDoc, updateDoc, doc 
-    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDPrpZYIJYhAmZRxW0Ph3udw-vUz6UiPNk",
@@ -126,68 +129,12 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const reportList = document.getElementById("reportList");
     const mapViewer = document.getElementById("mapViewer");
+    const postBtn = document.getElementById("postAnnBtn");
     const currentUser = JSON.parse(localStorage.getItem("currentUser")) || {};
     const officialBarangay = currentUser.barangay || "Santa Cruz";
 
-    // --- Load reports ---
-    async function loadReports() {
-      reportList.innerHTML = "<p>Loading reports...</p>";
-      const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        reportList.innerHTML = "<p>No reports yet.</p>";
-        return;
-      }
-
-      reportList.innerHTML = "";
-      for (const docSnap of querySnapshot.docs) {
-        const data = docSnap.data();
-        if (!data.location?.includes(officialBarangay)) continue;
-
-        const date = data.timestamp?.toDate?.().toLocaleString?.() || "No date";
-        const mapQuery = encodeURIComponent(`${data.location}, ${officialBarangay}`);
-
-        const reportDiv = document.createElement("div");
-        reportDiv.className = "report-item";
-        reportDiv.innerHTML = `
-          <h4>${data.issueType || "Unspecified Issue"}</h4>
-          <small><strong>Barangay:</strong> ${officialBarangay}</small>
-          <small><strong>Location:</strong> ${data.location || "N/A"}</small>
-          <small><strong>Date:</strong> ${date}</small>
-          <p><strong>Description:</strong> ${data.description || "No description provided."}</p>
-          ${data.imageData ? `<img src="${data.imageData}" alt="Report Image">` : ""}
-          <div>
-            <span class="status ${data.status || "Pending"}">${data.status || "Pending"}</span>
-            <select class="statusSelect">
-              <option value="Pending" ${data.status==="Pending"?"selected":""}>Pending</option>
-              <option value="InProgress" ${data.status==="InProgress"?"selected":""}>In Progress</option>
-              <option value="Resolved" ${data.status==="Resolved"?"selected":""}>Resolved</option>
-            </select>
-          </div>
-        `;
-
-        const select = reportDiv.querySelector(".statusSelect");
-        select.addEventListener("change", async (e)=>{
-          const newStatus = e.target.value;
-          await updateDoc(doc(db, "reports", docSnap.id), { status: newStatus });
-          // silent refresh
-          loadReports();
-        });
-
-        reportDiv.addEventListener("click", () => {
-          mapViewer.src = `https://www.google.com/maps?q=${mapQuery}&output=embed`;
-          window.scrollTo({ top: 100, behavior: "smooth" });
-        });
-
-        reportList.appendChild(reportDiv);
-      }
-    }
-
     // --- Post Announcement ---
-    const postBtn = document.getElementById("postAnnBtn");
     postBtn.addEventListener("click", async ()=>{
       const title = document.getElementById("annTitle").value.trim();
       const body = document.getElementById("annBody").value.trim();
@@ -211,14 +158,12 @@
       }
     });
 
-    // --- Logout ---
-    document.getElementById("logoutBtn").addEventListener("click", () => {
-      localStorage.removeItem("currentUser");
-      window.location.href = "index.html";
-    });
-
-    // --- Init ---
-    loadReports();
+    // --- Dynamic Map Update from Reports ---
+    window.updateMap = (location) => {
+      const mapQuery = encodeURIComponent(`${location}, ${officialBarangay}`);
+      mapViewer.src = `https://www.google.com/maps?q=${mapQuery}&output=embed`;
+      window.scrollTo({ top: 100, behavior: "smooth" });
+    };
   </script>
 </body>
 </html>
