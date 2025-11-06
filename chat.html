@@ -104,7 +104,7 @@
     text-align: right;
   }
 
-  /* 💬 Balanced chat bar */
+  /* 💬 Sticky, balanced chat bar */
   #chatForm {
     display: flex;
     align-items: center;
@@ -112,6 +112,9 @@
     background: #f9fafb;
     border-top: 1px solid #ddd;
     gap: 10px;
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
   }
 
   #chatInput {
@@ -162,6 +165,9 @@
     font-size: 0.9em;
   }
 </style>
+
+
+
 </head>
 <body>
   <header>
@@ -192,7 +198,6 @@
   />
   <button type="submit" id="sendBtn">Send</button>
 </form>
-
   <script>
     // === Current User ===
     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
