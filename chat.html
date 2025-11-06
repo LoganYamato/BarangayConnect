@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chat | BarangayConnect</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: "Segoe UI", Arial, sans-serif;
       background: #f3f4f6;
       margin: 0;
       padding: 0;
@@ -22,13 +22,41 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
     }
     header h2 {
       margin: 0;
-      font-size: 1.2em;
+      font-size: 1.3em;
     }
+    #controls {
+      display: flex;
+      gap: 8px;
+    }
+    button {
+      cursor: pointer;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: white;
+      color: #1e88e5;
+      font-weight: 600;
+    }
+    button:hover {
+      background: #e3f2fd;
+    }
+
+    #chatHeader {
+      background: #1565c0;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #ticketId {
+      font-size: 0.9em;
+      opacity: 0.9;
+    }
+
     #chatContainer {
       flex: 1;
       display: flex;
@@ -38,27 +66,40 @@
       background: white;
     }
     .msg {
-      padding: 10px;
+      padding: 10px 14px;
       margin: 6px 0;
-      border-radius: 10px;
+      border-radius: 18px;
       max-width: 75%;
       word-wrap: break-word;
+      position: relative;
+      font-size: 0.95em;
     }
     .msg.user {
       background: #1e88e5;
       color: white;
       margin-left: auto;
+      border-bottom-right-radius: 4px;
     }
     .msg.other {
       background: #e0e0e0;
       color: black;
       margin-right: auto;
+      border-bottom-left-radius: 4px;
     }
+    .timestamp {
+      font-size: 0.75em;
+      opacity: 0.7;
+      margin-top: 3px;
+      display: block;
+      text-align: right;
+    }
+
     #chatForm {
       display: flex;
       background: #f3f4f6;
       padding: 10px;
       border-top: 1px solid #ccc;
+      align-items: center;
     }
     #chatInput {
       flex: 1;
@@ -76,34 +117,41 @@
       margin-left: 8px;
       cursor: pointer;
     }
-    select {
-      padding: 6px;
+
+    #typingIndicator {
+      font-size: 0.9em;
+      color: gray;
+      padding: 6px 14px;
+      display: none;
+    }
+
+    #residentSelect {
+      padding: 6px 10px;
       border-radius: 6px;
       border: none;
-    }
-    #controls {
-      display: flex;
-      gap: 8px;
-    }
-    button {
-      cursor: pointer;
+      font-size: 0.9em;
     }
   </style>
 </head>
 <body>
   <header>
     <h2>Ticket Chat</h2>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <label for="residentSelect" style="font-size:0.9em;">Chat with:</label>
-      <select id="residentSelect"></select>
-    </div>
     <div id="controls">
       <button id="backBtn">← Back to Dashboard</button>
       <button id="logoutBtn">Logout</button>
     </div>
   </header>
 
+  <div id="chatHeader">
+    <div>
+      <strong id="chatWith"></strong>
+      <div id="ticketId"></div>
+    </div>
+    <select id="residentSelect" style="display:none;"></select>
+  </div>
+
   <main id="chatContainer"></main>
+  <div id="typingIndicator">Typing...</div>
 
   <form id="chatForm">
     <input type="text" id="chatInput" placeholder="Type your message..." required />
@@ -111,87 +159,115 @@
   </form>
 
   <script>
-    // Load current user
+    // === Current User ===
     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
     if (!currentUser) {
       alert("Please log in first.");
       window.location.href = "index.html";
     }
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const residents = users.filter(u => u.role === "resident" && u.barangay === currentUser.barangay);
-
-    const residentSelect = document.getElementById("residentSelect");
     const chatContainer = document.getElementById("chatContainer");
     const chatForm = document.getElementById("chatForm");
     const chatInput = document.getElementById("chatInput");
+    const typingIndicator = document.getElementById("typingIndicator");
+    const residentSelect = document.getElementById("residentSelect");
+    const chatWith = document.getElementById("chatWith");
+    const ticketIdEl = document.getElementById("ticketId");
 
-    // Fill resident dropdown (officials only)
-    if (currentUser.role === "official" || currentUser.role === "captain") {
-      residentSelect.innerHTML = residents.length
-        ? residents.map(r => `<option value="${r.email}">${r.name}</option>`).join("")
-        : "<option>No residents found</option>";
+    // === Load Stored Data ===
+    let chats = JSON.parse(localStorage.getItem("chats")) || [];
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+
+    // === If official, populate dropdown ===
+    let selectedResident = null;
+    if (currentUser.role === "official") {
+      const residents = users.filter(u => u.role === "resident");
+      residentSelect.style.display = "block";
+      residents.forEach(r => {
+        const opt = document.createElement("option");
+        opt.value = r.email;
+        opt.textContent = r.name + " (" + r.barangay + ")";
+        residentSelect.appendChild(opt);
+      });
+      selectedResident = residentSelect.value = residents[0]?.email || null;
+      updateHeader();
     } else {
-      // If resident, lock to their own
-      residentSelect.innerHTML = `<option value="${currentUser.email}">${currentUser.name}</option>`;
-      residentSelect.disabled = true;
+      // Resident view
+      selectedResident = "official@barangay.gov"; // chat to default official
+      updateHeader();
     }
 
-    // Get current target (resident being chatted with)
-    function getTargetEmail() {
-      return currentUser.role === "resident"
-        ? "official@barangay.gov"
-        : residentSelect.value;
+    // === Display chat partner & ticket id ===
+    function updateHeader() {
+      const partner = users.find(u => u.email === selectedResident);
+      chatWith.textContent = partner
+        ? "Chat with " + partner.name
+        : "Chat";
+      ticketIdEl.textContent = "Ticket ID: " + generateTicketId(selectedResident);
+      renderMessages();
     }
 
-    // Load chat per pair
-    function loadChat() {
-      const chats = JSON.parse(localStorage.getItem("chats")) || [];
-      const targetEmail = getTargetEmail();
+    function generateTicketId(email) {
+      return "TCK-" + btoa(email).slice(0, 6).toUpperCase();
+    }
 
-      const convo = chats.filter(
-        c =>
-          (c.sender === currentUser.email && c.receiver === targetEmail) ||
-          (c.sender === targetEmail && c.receiver === currentUser.email)
-      );
-
+    // === Render Messages ===
+    function renderMessages() {
       chatContainer.innerHTML = "";
-      convo.forEach(msg => {
+      const thread = chats.filter(
+        msg =>
+          (msg.sender === currentUser.email && msg.receiver === selectedResident) ||
+          (msg.sender === selectedResident && msg.receiver === currentUser.email)
+      );
+      thread.forEach(msg => {
         const div = document.createElement("div");
         div.classList.add("msg", msg.sender === currentUser.email ? "user" : "other");
-        div.textContent = `${msg.senderName}: ${msg.text}`;
+        div.innerHTML = `
+          ${msg.text}
+          <span class="timestamp">${new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</span>
+        `;
         chatContainer.appendChild(div);
       });
       chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    // Send message
+    // === Handle Message Send ===
     chatForm.addEventListener("submit", e => {
       e.preventDefault();
       const text = chatInput.value.trim();
       if (!text) return;
 
-      const targetEmail = getTargetEmail();
       const newMsg = {
         sender: currentUser.email,
-        senderName: currentUser.name || "User",
-        receiver: targetEmail,
+        receiver: selectedResident,
         text,
         timestamp: new Date().toISOString(),
       };
 
-      let chats = JSON.parse(localStorage.getItem("chats")) || [];
       chats.push(newMsg);
       localStorage.setItem("chats", JSON.stringify(chats));
-
       chatInput.value = "";
-      loadChat();
+      renderMessages();
     });
 
-    // Update chat when switching resident
-    residentSelect.addEventListener("change", loadChat);
+    // === Simulate typing indicator ===
+    chatInput.addEventListener("input", () => {
+      typingIndicator.style.display = "block";
+      clearTimeout(window.typingTimeout);
+      window.typingTimeout = setTimeout(() => {
+        typingIndicator.style.display = "none";
+      }, 800);
+    });
 
-    // Buttons
+    // === Dropdown change (official only) ===
+    if (residentSelect) {
+      residentSelect.addEventListener("change", () => {
+        selectedResident = residentSelect.value;
+        updateHeader();
+      });
+    }
+
+    // === Buttons ===
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("currentUser");
       window.location.href = "index.html";
@@ -201,7 +277,7 @@
       window.location.href = "official.html";
     });
 
-    loadChat();
+    renderMessages();
   </script>
 </body>
 </html>
